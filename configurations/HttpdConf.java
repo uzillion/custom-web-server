@@ -1,3 +1,5 @@
+package configurations;
+
 
 import java.io.BufferedReader;
 import java.io.FileNotFoundException;
@@ -26,25 +28,38 @@ public class HttpdConf extends ConfigurationReader {
   HashMap<String, ArrayList> configList;
   
   public HttpdConf(String path) {
+    configList = new HashMap<String, ArrayList>();
     parse(loadFile(path));
   }
 
-  public void parse(BufferedReader contentsBuffer) {
+  @Override
+  void parse(BufferedReader contentsBuffer) {
     try {
-      String line;
+      String line, key;
       line = contentsBuffer.readLine();
       StringTokenizer tokens;
       while(line != null) {
         if(line.length() > 0) {
           if(line.charAt(0) != '#') {
-//            tokens = new StringTokenizer(line, " ", false);
-            System.out.println(line);
+            tokens = new StringTokenizer(line, " ", false);
+            key = tokens.nextToken();
+            configList.put(key, new ArrayList());
+            while(tokens.hasMoreTokens()) {
+              configList.get(key).add(tokens.nextToken());
+            }
           }
         }
         line = contentsBuffer.readLine();
       }
     } catch (IOException ex) {
-      Logger.getLogger(HttpdConf.class.getName()).log(Level.SEVERE, null, ex);
+      System.out.println("Error reading httpd.conf file.");
     }
-  }    
+  }
+  
+  public ArrayList getValues(String key) {
+    if(configList.containsKey(key))
+      return configList.get(key);
+    else
+      return null;
+  }
 }

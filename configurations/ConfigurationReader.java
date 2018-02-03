@@ -1,3 +1,5 @@
+package configurations;
+
 
 import java.io.BufferedReader;
 import java.io.InputStreamReader;
@@ -14,9 +16,16 @@ import java.io.InputStreamReader;
  */
 public abstract class ConfigurationReader {
   
+  InputStreamReader fileContents;
+
   BufferedReader loadFile(String path) {
-    return new BufferedReader(new InputStreamReader(getClass().getResourceAsStream(path)));
-  }
+    try {
+      fileContents = new InputStreamReader(getClass().getResourceAsStream(path));
+    } catch(Exception e) {
+      System.out.println("Configuration file at "+path+" could not be loaded.");
+    }
+    return new BufferedReader(fileContents);
+  } 
   
   abstract void parse(BufferedReader fileContentBuffer);
   

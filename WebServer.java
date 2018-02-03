@@ -1,4 +1,6 @@
 
+import configurations.HttpdConf;
+import configurations.MimeTypes;
 import java.net.MalformedURLException;
 
 /*
@@ -13,7 +15,9 @@ import java.net.MalformedURLException;
  */
 public class WebServer {
     
-    public static void main(String args[]) throws MalformedURLException {
-      HttpdConf httpd_conf = new HttpdConf("/conf/httpd.conf");
+    public static void main(String args[]) {
+      
+      HttpdConf httpd_configs = new HttpdConf("/conf/httpd.conf");
+      MimeTypes mimeTypes = new MimeTypes("/conf/mime.types");
     }
 }
