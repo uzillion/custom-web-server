@@ -30,6 +30,7 @@ public class HttpdConf extends ConfigurationReader {
   public HttpdConf(String path) {
     configList = new HashMap<String, ArrayList>();
     parse(loadFile(path));
+    System.out.println(configList.toString());
   }
 
   @Override
