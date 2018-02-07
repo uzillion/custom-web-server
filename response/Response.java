@@ -1,3 +1,9 @@
+package response;
+
+
+import java.util.ArrayList;
+import java.util.Arrays;
+
 /*
  * To change this license header, choose License Headers in Project Properties.
  * To change this template file, choose Tools | Templates
@@ -10,12 +16,10 @@
  */
 public class Response {
   
+  static final ArrayList<String> REQUEST_VERBS = new ArrayList(Arrays.asList("GET", "HEAD", "POST", "PUT", "DELETE"));
+
   public static void badRequest() {
     
-  }
-
-  static void internalError() {
-    throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
   }
   
 }
