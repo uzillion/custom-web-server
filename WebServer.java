@@ -23,11 +23,13 @@ public class WebServer {
   static final int DEFAULT_PORT = 3000;
   static Socket client_socket;
   static ServerSocket server_socket;
+  static HttpdConf httpd_configs;
+  static MimeTypes mimeTypes;
   
   public static void main(String args[]) throws IOException {
       
-    HttpdConf httpd_configs = new HttpdConf("/conf/httpd.conf");
-    MimeTypes mimeTypes = new MimeTypes("/conf/mime.types");
+    httpd_configs = new HttpdConf("/conf/httpd.conf");
+    mimeTypes = new MimeTypes("/conf/mime.types");
       
     client_socket = null;
     server_socket = new ServerSocket(DEFAULT_PORT);
@@ -40,7 +42,7 @@ public class WebServer {
       if(client_socket == null)
         System.out.println("Server is listening...");
       client_socket = server_socket.accept();
-      Thread responseThread = new Worker(client_socket.getInputStream());
+      Thread responseThread = new Worker(client_socket.getInputStream(), httpd_configs, mimeTypes);
       
       responseThread.start();
     }

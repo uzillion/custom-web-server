@@ -1,4 +1,6 @@
 
+import configurations.HttpdConf;
+import configurations.MimeTypes;
 import response.Response;
 import response.Error;
 import java.io.BufferedReader;
@@ -6,14 +8,6 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.util.HashMap;
-import java.util.logging.Level;
-import java.util.logging.Logger;
-
-/*
- * To change this license header, choose License Headers in Project Properties.
- * To change this template file, choose Tools | Templates
- * and open the template in the editor.
- */
 
 /**
  *
@@ -21,19 +15,33 @@ import java.util.logging.Logger;
  */
 public class Worker extends Thread {
  
-  private final HashMap<String, String> request_line = new HashMap<>();
-  private final HashMap<String, String> headers = new HashMap<>();
+  private final HashMap<String, String> request_line;
+  private final HashMap<String, String> headers;
   private final InputStream client_stream;
+  Resource resource;
+  private final HttpdConf httpd_configs;
+  private final MimeTypes mimeTypes;
+  String body;
   
-  public Worker(InputStream client_stream) {
+  private final boolean DUMP = false; 
+
+  
+  public Worker(InputStream client_stream, HttpdConf httpd_configs, MimeTypes mimeTypes) {
+    request_line = new HashMap<>();
+    headers = new HashMap<>();
+    body = "";
+
     this.client_stream = client_stream;
+    this.httpd_configs = httpd_configs;
+    this.mimeTypes = mimeTypes;
+    
   }
   
   @Override
   public void run() {
-    System.out.println(this.getName());
     try {
       parse(client_stream);
+      resource = new Resource(httpd_configs.getList());
     } catch (IOException ex) {
       Error.internalError();
     }
@@ -41,23 +49,68 @@ public class Worker extends Thread {
   
    private void parse(InputStream client_stream) throws IOException {
     BufferedReader request = new BufferedReader(new InputStreamReader(client_stream));
+    String[] request_line_tokens;
+    
+    while(true) {
+      if(request.ready()) {
+        break;
+      }
+    }
+    
+    parseRequestLine(request);
+    parseHeaders(request);
+    if(headers.containsKey("content-length"))
+      parseBody(request);
+    
+    if(DUMP) {
+      System.out.println();
+      System.out.println(this.getName()+":");
+      System.out.println(request_line.toString());
+      System.out.println(headers.toString());
+      System.out.println(body);
+      System.out.println();
+    }
+    
+  }
+  
+  private void parseRequestLine(BufferedReader request) throws IOException {
+    String [] request_line_tokens = request.readLine().split(" ");
+
+    String request_verb = "";
     String URI = "";
     String version = "";
+    
+     
+    int request_line_length = request_line_tokens.length;
+      
+    if(request_line_length != 0 && request_line_length <= 3) {
+      request_verb = request_line_tokens[0];
+      if(request_line_length == 3) {
+        URI = request_line_tokens[1];
+        version = request_line_tokens[2];
+      } else {
+        URI = request_line_tokens[1];
+      }
+    }
+    else
+      Error.badRequest();
+
+    request_line.put("verb", request_verb);
+    request_line.put("URI", URI);
+    request_line.put("version", version);
+  }
+
+  private void parseHeaders(BufferedReader request) throws IOException {
     String header = "";
-    String body = "";
-    
-    String[] request_line_array = parseRequest(request);
-    request_line.put("verb", request_line_array[0]);
-    request_line.put("URI", request_line_array[1]);
-    request_line.put("version", request_line_array[2]);
-    
     header = request.readLine();
     while(header != null && header.length() != 0) {
       String[] keyValuePair = header.split(": ");
       headers.put(keyValuePair[0], keyValuePair[1]);
       header = request.readLine();
     }
-      
+  }
+
+  private void parseBody(BufferedReader request) throws IOException {
     int c, read = 0;
     int content_length = Integer.parseInt(headers.get("content-length"));
     while((c=request.read()) != -1) {
@@ -66,38 +119,5 @@ public class Worker extends Thread {
       if(read == content_length)
         break;
     } 
-      
-  }
-  
-  private static String[] parseRequest(BufferedReader request) throws IOException {
-    String[] request_line = {};
-    String request_verb = "";
-    String URI = "";
-    String version = "";
-    while(true) {
-      if(request.ready()) {
-        request_line = request.readLine().split(" ");
-        break;
-      }
-    }
-     
-    int request_line_length = request_line.length;
-      
-    if(request_line_length != 0 && request_line_length <= 3) {
-      request_verb = request_line[0];
-      if(request_line_length == 3) {
-        URI = request_line[1];
-        version = request_line[2];
-      } else {
-        URI = request_line[1];
-      }
-    }
-    else
-      Response.badRequest();
-
-    request_line[0] = request_verb;
-    request_line[1] = URI;
-    request_line[2] = version;
-    return request_line;
   }
 }

@@ -9,6 +9,7 @@ import java.io.InputStreamReader;
 import java.net.URL;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.Hashtable;
 import java.util.StringTokenizer;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -25,7 +26,7 @@ import java.util.logging.Logger;
  */
 public class HttpdConf extends ConfigurationReader {
   
-  HashMap<String, ArrayList> configList;
+  private HashMap<String, ArrayList> configList;
   
   public HttpdConf(String path) {
     configList = new HashMap<String, ArrayList>();
@@ -43,23 +44,22 @@ public class HttpdConf extends ConfigurationReader {
           if(line.charAt(0) != '#') {
             tokens = new StringTokenizer(line, " ", false);
             key = tokens.nextToken();
-            configList.put(key, new ArrayList());
             while(tokens.hasMoreTokens()) {
-              configList.get(key).add(tokens.nextToken());
+              if(!configList.containsKey(key)) 
+                  configList.put(key, new ArrayList());
+                configList.get(key).add(tokens.nextToken());
+              }
             }
           }
-        }
         line = contentsBuffer.readLine();
       }
-    } catch (IOException ex) {
+    }
+    catch (IOException ex) {
       System.out.println("Error reading httpd.conf file.");
     }
   }
   
-  public ArrayList getValue(String key) {
-    if(configList.containsKey(key))
-      return configList.get(key);
-    else
-      return null;
+  public HashMap getList() {
+    return configList;
   }
 }

@@ -9,6 +9,7 @@ import java.io.BufferedReader;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.Map;
 import java.util.StringTokenizer;
 
 /**
@@ -17,27 +18,27 @@ import java.util.StringTokenizer;
  */
 public class MimeTypes extends ConfigurationReader {
 
-  HashMap<String, ArrayList> types;
+  HashMap<String, String> types;
   
   public MimeTypes(String path) {
-    types = new HashMap<String, ArrayList>();
+    types = new HashMap<String, String>();
     parse(loadFile(path));
   }
   
   @Override
   void parse(BufferedReader contentsBuffer) {
     try {
-      String line, key;
+      String line, extension, type;
       line = contentsBuffer.readLine();
       StringTokenizer tokens;
       while(line != null) {
         if(line.length() > 0) {
           if(line.charAt(0) != '#') {
             tokens = new StringTokenizer(line, "\t ", false);
-            key = tokens.nextToken();
-            types.put(key, new ArrayList());
+            type = tokens.nextToken();
             while(tokens.hasMoreTokens()) {
-              types.get(key).add(tokens.nextToken());
+              extension = tokens.nextToken();
+              types.put(extension, type);
             }
           }
         }
@@ -48,16 +49,16 @@ public class MimeTypes extends ConfigurationReader {
     }
   }
   
-  public ArrayList getExtensions(String type) {
-    if(types.containsKey(type))
-      return types.get(type);
-    else
-      return null;
+  public HashMap getTypes() {
+    return types;
   }
   
   // Returns the suitable type for the given extension.
-  public String getType(String extension) {
-    return "NOT SUPPORTED YET";
+  public void dump() {
+    for(Map.Entry<String, String> type : types.entrySet()) {
+      System.out.println(type.getKey()+"\t->\t"+type.getValue());
+    }
   }
+  
   
 }
