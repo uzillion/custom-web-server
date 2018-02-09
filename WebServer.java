@@ -16,7 +16,7 @@ import java.util.HashMap;
 
 /**
  *
- * @author Uzair
+ * @author Uzair and Jizhou
  */
 public class WebServer {
   
@@ -43,8 +43,9 @@ public class WebServer {
         System.out.println("Server is listening...");
       client_socket = server_socket.accept();
       Thread responseThread = new Worker(client_socket.getInputStream(), httpd_configs, mimeTypes);
-      
-      responseThread.start();
+ //     System.out.println("place 1");
+      responseThread.run();
+ //     System.out.println("place 2");
     }
   }
 }

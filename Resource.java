@@ -3,7 +3,7 @@ import java.util.HashMap;
 
 /**
  *
- * @author Uzair
+ * @author Uzair and Jizhou
  */
 public class Resource {
   
@@ -13,6 +13,6 @@ public class Resource {
     
     this.configList = configList;
     System.out.println(configlist.get("Alias"));
-    
+//    System.out.println(configlist.get("Alias").get(1));
   }  
 }
