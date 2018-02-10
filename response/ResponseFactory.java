@@ -8,7 +8,7 @@ package response;
 
 /**
  *
- * @author Uzair
+ *  
  */
 public class ResponseFactory {
   

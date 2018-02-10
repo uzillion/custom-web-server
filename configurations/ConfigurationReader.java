@@ -12,7 +12,7 @@ import java.io.InputStreamReader;
 
 /**
  *
- * @author Uzair
+ *  
  */
 public abstract class ConfigurationReader {
   

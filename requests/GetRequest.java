@@ -7,7 +7,7 @@ package requests;
 
 /**
  *
- * @author Uzair
+ *  
  */
 public class GetRequest {
   

@@ -14,7 +14,7 @@ import java.util.StringTokenizer;
 
 /**
  *
- * @author Uzair
+ *  
  */
 public class MimeTypes extends ConfigurationReader {
 

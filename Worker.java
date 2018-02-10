@@ -11,13 +11,13 @@ import java.util.HashMap;
 
 /**
  *
- * @author Uzair
+ *  
  */
 public class Worker extends Thread {
  
   private final HashMap<String, String> request_line;
   private final HashMap<String, String> headers;
-  private final InputStream client_stream;
+  private final InputStream client_stream; 
   Resource resource;
   private final HttpdConf httpd_configs;
   private final MimeTypes mimeTypes;
@@ -41,26 +41,27 @@ public class Worker extends Thread {
   public void run() {
     try {
       parse(client_stream);
-      resource = new Resource(httpd_configs.getList());
+      resource = new Resource(httpd_configs.getList(), request_line.get("URI"));
+      resource.resolveAddresses();
     } catch (IOException ex) {
       Error.internalError();
     }
   }
   
    private void parse(InputStream client_stream) throws IOException {
-    BufferedReader request = new BufferedReader(new InputStreamReader(client_stream));
+    BufferedReader requestBuffer = new BufferedReader(new InputStreamReader(client_stream));
     String[] request_line_tokens;
     
     while(true) {
-      if(request.ready()) {
+      if(requestBuffer.ready()) {
         break;
       }
     }
     
-    parseRequestLine(request);
-    parseHeaders(request);
+    parseRequestLine(requestBuffer);
+    parseHeaders(requestBuffer);
     if(headers.containsKey("content-length"))
-      parseBody(request);
+      parseBody(requestBuffer);
     
     if(DUMP) {
       System.out.println();
@@ -73,8 +74,8 @@ public class Worker extends Thread {
     
   }
   
-  private void parseRequestLine(BufferedReader request) throws IOException {
-    String [] request_line_tokens = request.readLine().split(" ");
+  private void parseRequestLine(BufferedReader requestBuffer) throws IOException {
+    String [] request_line_tokens = requestBuffer.readLine().split(" ");
 
     String request_verb = "";
     String URI = "";
@@ -100,20 +101,20 @@ public class Worker extends Thread {
     request_line.put("version", version);
   }
 
-  private void parseHeaders(BufferedReader request) throws IOException {
+  private void parseHeaders(BufferedReader requestBuffer) throws IOException {
     String header = "";
-    header = request.readLine();
+    header = requestBuffer.readLine();
     while(header != null && header.length() != 0) {
       String[] keyValuePair = header.split(": ");
       headers.put(keyValuePair[0], keyValuePair[1]);
-      header = request.readLine();
+      header = requestBuffer.readLine();
     }
   }
 
-  private void parseBody(BufferedReader request) throws IOException {
+  private void parseBody(BufferedReader requestBuffer) throws IOException {
     int c, read = 0;
     int content_length = Integer.parseInt(headers.get("content-length"));
-    while((c=request.read()) != -1) {
+    while((c=requestBuffer.read()) != -1) {
       body += (char)c;
       read++;
       if(read == content_length)

@@ -2,17 +2,11 @@ package configurations;
 
 
 import java.io.BufferedReader;
-import java.io.FileNotFoundException;
 import java.io.FileReader;
 import java.io.IOException;
-import java.io.InputStreamReader;
-import java.net.URL;
 import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.Hashtable;
 import java.util.StringTokenizer;
-import java.util.logging.Level;
-import java.util.logging.Logger;
 
 /*
  * To change this license header, choose License Headers in Project Properties.
@@ -22,11 +16,11 @@ import java.util.logging.Logger;
 
 /**
  *
- * @author Uzair
+ *  
  */
 public class HttpdConf extends ConfigurationReader {
   
-  private HashMap<String, ArrayList> configList;
+  private final HashMap<String, ArrayList> configList;
   
   public HttpdConf(String path) {
     configList = new HashMap<String, ArrayList>();
