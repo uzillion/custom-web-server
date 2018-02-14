@@ -23,8 +23,9 @@ public class HttpdConf extends ConfigurationReader {
   private final HashMap<String, ArrayList> configList;
   
   public HttpdConf(String path) {
-    configList = new HashMap<String, ArrayList>();
+    configList = new HashMap<>();
     parse(loadFile(path));
+    System.out.println(configList.toString());
   }
 
   @Override
@@ -32,16 +33,16 @@ public class HttpdConf extends ConfigurationReader {
     try {
       String line, key;
       line = contentsBuffer.readLine();
-      StringTokenizer tokens;
+      String[] tokens;
       while(line != null) {
         if(line.length() > 0) {
           if(line.charAt(0) != '#') {
-            tokens = new StringTokenizer(line, " ", false);
-            key = tokens.nextToken();
-            while(tokens.hasMoreTokens()) {
+            tokens = line.split(" ", 3);
+            key = tokens[0];
+            for(int i=1 ; i<tokens.length; i++) {
               if(!configList.containsKey(key)) 
                   configList.put(key, new ArrayList());
-                configList.get(key).add(tokens.nextToken());
+                configList.get(key).add(tokens[i]);
               }
             }
           }
@@ -53,7 +54,7 @@ public class HttpdConf extends ConfigurationReader {
     }
   }
   
-  public HashMap getList() {
+  public HashMap<String, ArrayList> getList() {
     return configList;
   }
 }

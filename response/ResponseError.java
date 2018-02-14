@@ -10,13 +10,13 @@ package response;
  *
  *  
  */
-public class Error {
+public class ResponseError {
   
-  public static void internalError() {
+  public void internalError() {
     
   }
 
-  public static void badRequest() {
+  public void badRequest() {
     throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
   }
   

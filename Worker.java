@@ -1,9 +1,11 @@
 
+import configurations.Htaccess;
 import configurations.HttpdConf;
 import configurations.MimeTypes;
 import response.Response;
-import response.Error;
+import response.ResponseError;
 import java.io.BufferedReader;
+import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
@@ -17,10 +19,12 @@ public class Worker extends Thread {
  
   private final HashMap<String, String> request_line;
   private final HashMap<String, String> headers;
-  private final InputStream client_stream; 
-  Resource resource;
+  private final InputStream client_stream;
   private final HttpdConf httpd_configs;
   private final MimeTypes mimeTypes;
+  Htaccess htaccess;
+  ResponseError error;
+  Resource resource;
   String body;
   
   private final boolean DUMP = false; 
@@ -30,7 +34,7 @@ public class Worker extends Thread {
     request_line = new HashMap<>();
     headers = new HashMap<>();
     body = "";
-
+    error = new ResponseError();
     this.client_stream = client_stream;
     this.httpd_configs = httpd_configs;
     this.mimeTypes = mimeTypes;
@@ -39,12 +43,20 @@ public class Worker extends Thread {
   
   @Override
   public void run() {
+    String absPath;
+    String authPath;
     try {
       parse(client_stream);
       resource = new Resource(httpd_configs.getList(), request_line.get("URI"));
-      resource.resolveAddresses();
+      absPath = resource.resolveAddresses();
+      authPath = (String) httpd_configs.getList().get("AccessFileName").get(0);
+      authPath = authPath.replace("\"", "");
+      File authFile = new File(authPath);
+      if(authFile.exists())
+        htaccess = new Htaccess(authPath);
+      
     } catch (IOException ex) {
-      Error.internalError();
+      error.internalError();
     }
   }
   
@@ -94,7 +106,7 @@ public class Worker extends Thread {
       }
     }
     else
-      Error.badRequest();
+      error.badRequest();
 
     request_line.put("verb", request_verb);
     request_line.put("URI", URI);

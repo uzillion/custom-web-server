@@ -9,7 +9,7 @@ import java.util.HashMap;
  */
 public class Resource {
   
-  private HashMap<String, ArrayList> configList;
+  private final HashMap<String, ArrayList> configList;
   private String URI_alias;
   private String AbsolutePath;
   String[] URI_tokens;
@@ -19,31 +19,35 @@ public class Resource {
     this.configList = list;
     AbsolutePath = "";
     this.URI = URI;
+    
+    // Breaking URI using "/" to get the first entry path
     this.URI_tokens = URI.split("/", 3);
+    
+    // Storing the entry path to check against aliases
     this.URI_alias = "/" + this.URI_tokens[1];
+    
+    // If alias or path is not end point, append "/" to the end 
     if(this.URI_tokens.length > 2)
       this.URI_alias = this.URI_alias + "/";
   }
 
-  void resolveAddresses() {
+  String resolveAddresses() {
     String path;
     int alias_index;
-    if((alias_index = checkAlias("Alias")) != -1) {
+    // Checking if the alis exists in the config file
+    if((alias_index = checkAlias("Alias")) != -1)
       path = getAbsPath("Alias", alias_index);
-      // send path to appropriate class
-      System.out.println("Alias found");
-    }
-    else if((alias_index = checkAlias("ScriptAlias")) != -1) {
+    
+    // Else check if alias exists as a script alias
+    else if((alias_index = checkAlias("ScriptAlias")) != -1)
       path = getAbsPath("ScriptAlias", alias_index);
-      // send path to appropriate class
-      System.out.println("ScriptAlias found");      
-    }
-    else {
+    
+    // Else append documet root to unmodified URI
+    else
       path = getAbsPath("DocumentRoot", 0);
-    }
     
     System.out.println("Final output path: "+path);
-      
+    return path;
   }
   
   private int checkAlias(String alias) {
@@ -54,27 +58,39 @@ public class Resource {
     return -1;
   }
 
+  // Gets absolute path of the directory by checking various conditions
   private String getAbsPath(String configKey, int alias_index) {
     String path;
-    if(!configKey.equals("DocumentRoot")) {
+    File file;
+    if(!configKey.equals("DocumentRoot"))
+      // If alias exists, the resolved path will be stored in the next index
       path = (String) configList.get(configKey).get(alias_index+1);
-      path = path.substring(1, path.length()-1);
-    }  
-    else {
+    // else, if alias does not exist
+    else
       path = (String) configList.get(configKey).get(alias_index);
-      path = path.substring(1, path.length()-1); 
-      System.out.println(path);
-    }
+    
+    path = path.replace("\"", ""); 
+
+    
+    // If alias was not end point, append the remainder of the path to the modified URI
     if(URI_tokens.length > 2)
         path = path + URI_tokens[2];
     
-    File file = new File(path);
-    if(file.isFile())
-      return file.getAbsolutePath();
-    else {
+//    File file = new File(path);
+//    if(file.isFile()) {
+//      return file.getAbsolutePath();
+//    }
+
+    // If is not a file, appending directory index to the path    
+    file = new File(path);
+    if(!file.isFile()) {
+      if(!path.endsWith("/"))
+        path += "/";
       path = path + "index.html";
       file = new File(path);
-      return file.getAbsolutePath();
     }
+    
+    return file.getAbsolutePath();
+      
   }
 }
