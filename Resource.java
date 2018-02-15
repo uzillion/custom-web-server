@@ -2,6 +2,8 @@
 import java.io.File;
 import java.util.ArrayList;
 import java.util.HashMap;
+import response.Response;
+import response.ResponseError;
 
 /**
  *
@@ -12,6 +14,8 @@ public class Resource {
   private final HashMap<String, ArrayList> configList;
   private String URI_alias;
   private String AbsolutePath;
+  public boolean sa = false;   // a variable to indicate if it is script alias
+  ResponseError error;
   String[] URI_tokens;
   String URI;
   
@@ -19,6 +23,10 @@ public class Resource {
     this.configList = list;
     AbsolutePath = "";
     this.URI = URI;
+    error = new ResponseError();
+    System.out.println("place 1 in resource.");
+    System.out.println(this.URI);
+    
     
     // Breaking URI using "/" to get the first entry path
     this.URI_tokens = URI.split("/", 3);
@@ -34,13 +42,23 @@ public class Resource {
   String resolveAddresses() {
     String path;
     int alias_index;
+    System.out.println("check script alias");
+    System.out.println(checkAlias("ScriptAlias"));
     // Checking if the alis exists in the config file
     if((alias_index = checkAlias("Alias")) != -1)
       path = getAbsPath("Alias", alias_index);
     
     // Else check if alias exists as a script alias
-    else if((alias_index = checkAlias("ScriptAlias")) != -1)
+    
+    else if((alias_index = checkAlias("ScriptAlias")) != -1){
       path = getAbsPath("ScriptAlias", alias_index);
+      System.out.println("place 2 in resource");
+      System.out.println(path);
+      // set script alias as true
+      this.sa = true; 
+    }
+      
+    
     
     // Else append documet root to unmodified URI
     else
@@ -81,12 +99,11 @@ public class Resource {
 //      return file.getAbsolutePath();
 //    }
 
-    // If is not a file, appending directory index to the path    
     file = new File(path);
     if(!file.isFile()) {
       if(!path.endsWith("/"))
         path += "/";
-      path = path + "index.html";
+//      path = path + "index.html";
       file = new File(path);
     }
     

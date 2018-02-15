@@ -23,7 +23,7 @@ import java.util.logging.Logger;
  */
 public abstract class ConfigurationReader {
   
-  FileReader fileContents;
+  InputStreamReader fileContents;
 
   BufferedReader loadFile(String path) {
       URL url = getClass().getResource(path);
@@ -31,7 +31,7 @@ public abstract class ConfigurationReader {
 
     try {
       //      fileContents = new InputStreamReader(getClass().getResourceAsStream(path));
-      fileContents = new FileReader(url.getPath());
+      fileContents = new InputStreamReader(getClass().getResourceAsStream(path));
     } catch (Exception e) {
       System.out.println("Could not load: "+url.getPath());
     }

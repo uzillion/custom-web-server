@@ -22,12 +22,13 @@ public class Worker extends Thread {
   private final InputStream client_stream;
   private final HttpdConf httpd_configs;
   private final MimeTypes mimeTypes;
+  String absPath;
   Htaccess htaccess;
   ResponseError error;
   Resource resource;
   String body;
   
-  private final boolean DUMP = false; 
+  private final boolean DUMP = true; 
 
   
   public Worker(InputStream client_stream, HttpdConf httpd_configs, MimeTypes mimeTypes) {
@@ -43,12 +44,24 @@ public class Worker extends Thread {
   
   @Override
   public void run() {
-    String absPath;
     String authPath;
     try {
       parse(client_stream);
+      System.out.println("worker, place 4");
       resource = new Resource(httpd_configs.getList(), request_line.get("URI"));
       absPath = resource.resolveAddresses();
+      System.out.println("worker, place 1");
+      System.out.println(absPath);
+      
+      // check if file exists
+      fileexist();
+
+      // check if a script alias
+      if(resource.sa){
+        runscript();
+      }
+      
+
       authPath = (String) httpd_configs.getList().get("AccessFileName").get(0);
       authPath = authPath.replace("\"", "");
       File authFile = new File(authPath);
@@ -95,7 +108,13 @@ public class Worker extends Thread {
     
      
     int request_line_length = request_line_tokens.length;
-      
+    
+    if(request_line_length != 3){
+        error.SC400();
+    }
+    
+
+    
     if(request_line_length != 0 && request_line_length <= 3) {
       request_verb = request_line_tokens[0];
       if(request_line_length == 3) {
@@ -132,5 +151,34 @@ public class Worker extends Thread {
       if(read == content_length)
         break;
     } 
+  }
+  
+  public void fileexist(){
+    System.out.println(absPath);
+    File file = new File(absPath);
+    boolean check = file.exists();
+    if(!check){
+        error.SC404();
+    }
+  }
+  
+  public void runscript() throws IOException{
+      System.out.println("worker place 3");
+      System.out.println(absPath);
+      Process process;
+      try{
+        System.out.println("worker place 6");
+        process = Runtime.getRuntime().exec(absPath);
+        process.waitFor();
+        System.out.println("worker place 7");
+        System.out.println(process.exitValue());
+        if(process.exitValue() == 0)
+            error.SC200();
+        else
+            error.SC500();
+      } catch(Exception e){
+        System.out.println("worker place 5 exception e");
+        error.SC500();
+      }
   }
 }
