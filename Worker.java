@@ -2,8 +2,8 @@
 import configurations.Htaccess;
 import configurations.HttpdConf;
 import configurations.MimeTypes;
-import response.Response;
-import response.ResponseError;
+import response.*;
+import requests.*;
 import java.io.BufferedReader;
 import java.io.File;
 import java.io.IOException;
@@ -25,8 +25,10 @@ public class Worker extends Thread {
   String absPath;
   Htaccess htaccess;
   ResponseError error;
+  ResponseFactory rf;
   Resource resource;
   String body;
+  Request request;
   
   private final boolean DUMP = true; 
 
@@ -56,10 +58,7 @@ public class Worker extends Thread {
       // check if file exists
       fileexist();
 
-      // check if a script alias
-      if(resource.sa){
-        runscript();
-      }
+      
       
 
       authPath = (String) httpd_configs.getList().get("AccessFileName").get(0);
@@ -67,6 +66,17 @@ public class Worker extends Thread {
       File authFile = new File(authPath);
       if(authFile.exists())
         htaccess = new Htaccess(authPath);
+      
+      // check if a script alias
+      if(resource.sa){
+        runscript();
+      }
+      
+      // do the methods, Get, post, delete...
+      GetRequest request = new GetRequest(request_line, headers, body, absPath);
+      
+      
+      
       
     } catch (IOException ex) {
       error.internalError();
