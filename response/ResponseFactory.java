@@ -23,9 +23,12 @@ public class ResponseFactory {
         System.out.println(SC);
         System.out.println(reasonphrase);
         System.out.println(headers.toString());   // header is empty?
-        for (String s: records){
-            System.out.println(s);
+        if(!records.isEmpty()){
+            for (String s: records){
+                System.out.println(s);
+            }
         }
+        
         
         
         
@@ -39,6 +42,9 @@ public class ResponseFactory {
         } else if(sc.equals("500")){
             reasonphrase = "The server either does not recognize the request method, or it lacks the ability to fulfill the request";
             return "500 Internal Server Error";
+        } else if(sc.equals("204")){
+            reasonphrase = "successfully delete the target file";
+            return "204 No Content";
         } else
             return "unknown status code";
     }

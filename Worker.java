@@ -73,8 +73,11 @@ public class Worker extends Thread {
       }
       
       // do the methods, Get, post, delete...
-      GetRequest request = new GetRequest(request_line, headers, body, absPath);
-      
+      if(request_line.get("verb").equals("GET")){
+        GetRequest request = new GetRequest(request_line, headers, body, absPath);
+      } else if (request_line.get("verb").equals("DELETE")){
+          DeleteRequest request = new DeleteRequest(request_line, headers, body, absPath);
+      }
       
       
       
