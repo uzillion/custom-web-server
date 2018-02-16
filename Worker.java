@@ -44,17 +44,22 @@ public class Worker extends Thread {
   @Override
   public void run() {
     String absPath;
-    String authPath;
+    String parentPath;
+    String accessFileName;
     try {
       parse(client_stream);
       resource = new Resource(httpd_configs.getList(), request_line.get("URI"));
       absPath = resource.resolveAddresses();
-      authPath = (String) httpd_configs.getList().get("AccessFileName").get(0);
-      authPath = authPath.replace("\"", "");
-      File authFile = new File(authPath);
-      if(authFile.exists())
-        htaccess = new Htaccess(authPath);
-      
+      parentPath = new File(absPath).getParent();
+      parentPath = parentPath.replace("\"", "") + "/";
+      accessFileName = (String) httpd_configs.getList().get("AccessFileName").get(0);
+      accessFileName  = accessFileName.replace("\"", "");
+      File authFile = new File(parentPath + accessFileName);
+      System.out.println(authFile.getPath());
+      if(authFile.exists()) {
+        System.out.println("Access file exists");
+        htaccess = new Htaccess(authFile.getPath());
+      }
     } catch (IOException ex) {
       error.internalError();
     }

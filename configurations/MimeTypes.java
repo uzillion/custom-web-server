@@ -22,6 +22,7 @@ public class MimeTypes extends ConfigurationReader {
   
   public MimeTypes(String path) {
     types = new HashMap<String, String>();
+    path = getClass().getResource(path).getPath();
     parse(loadFile(path));
   }
   

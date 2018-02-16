@@ -26,7 +26,7 @@ public class Htaccess extends ConfigurationReader {
     String tokens[], line;
     try {
       while((line = fileContentBuffer.readLine()) != null ) {
-        tokens = line.split(" ");
+        tokens = line.split(" ", 2);
         auth_details.put(tokens[0], tokens[1]);
       }
     } catch (IOException ex) {
