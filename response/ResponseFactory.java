@@ -37,7 +37,7 @@ public class ResponseFactory {
     
     public String generate_SC(String sc){
         if(sc.equals("200")){
-            reasonphrase = "execution complete successfully";
+            reasonphrase = "complete successfully";
             return "200 OK";
         } else if(sc.equals("500")){
             reasonphrase = "The server either does not recognize the request method, or it lacks the ability to fulfill the request";
@@ -45,6 +45,9 @@ public class ResponseFactory {
         } else if(sc.equals("204")){
             reasonphrase = "successfully delete the target file";
             return "204 No Content";
+        } else if(sc.equals("201")){
+            reasonphrase = "successfully create the target file";
+            return "201 Created";
         } else
             return "unknown status code";
     }

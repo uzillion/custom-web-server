@@ -77,7 +77,12 @@ public class Worker extends Thread {
         GetRequest request = new GetRequest(request_line, headers, body, absPath);
       } else if (request_line.get("verb").equals("DELETE")){
           DeleteRequest request = new DeleteRequest(request_line, headers, body, absPath);
+      } else if (request_line.get("verb").equals("POST")){
+          PostRequest request = new PostRequest(request_line, headers, body, absPath);
+      } else if (request_line.get("verb").equals("PUT")){
+          PutRequest request = new PutRequest(request_line, headers, body, absPath);
       }
+      
       
       
       
@@ -150,6 +155,8 @@ public class Worker extends Thread {
     header = requestBuffer.readLine();
     while(header != null && header.length() != 0) {
       String[] keyValuePair = header.split(": ");
+      System.out.println("value 0 " + keyValuePair[0]);
+      System.out.println("value 1 " + keyValuePair[1]);
       headers.put(keyValuePair[0], keyValuePair[1]);
       header = requestBuffer.readLine();
     }
@@ -170,7 +177,7 @@ public class Worker extends Thread {
     System.out.println(absPath);
     File file = new File(absPath);
     boolean check = file.exists();
-    if(!check){
+    if(!check & !request_line.get("verb").equals("PUT")){
         error.SC404();
     }
   }
