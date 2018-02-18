@@ -2,6 +2,8 @@
 import java.io.File;
 import java.util.ArrayList;
 import java.util.HashMap;
+import response.Response;
+import response.ResponseError;
 
 /**
  *
@@ -13,6 +15,7 @@ public class Resource {
   private String URI_alias;
   private String AbsolutePath;
   boolean isScriptAliased;
+  ResponseError error;
   String[] URI_tokens;
   String URI;
   
@@ -21,6 +24,7 @@ public class Resource {
     AbsolutePath = "";
     isScriptAliased = false;
     this.URI = URI;
+    
     // Breaking URI using "/" to get the first entry path
     this.URI_tokens = URI.split("/", 3);
     
@@ -35,6 +39,8 @@ public class Resource {
   String resolveAddresses() {
     String path;
     int alias_index;
+    System.out.println("check script alias");
+    System.out.println(checkAlias("ScriptAlias"));
     // Checking if the alis exists in the config file
     if((alias_index = checkAlias("Alias")) != -1)
       path = getAbsPath("Alias", alias_index);
@@ -83,12 +89,11 @@ public class Resource {
 //      return file.getAbsolutePath();
 //    }
 
-    // If is not a file, appending directory index to the path    
     file = new File(path);
     if(!file.isFile()) {
       if(!path.endsWith("/"))
         path += "/";
-      path = path + "index.html";
+//      path = path + "index.html";
       file = new File(path);
     }
     

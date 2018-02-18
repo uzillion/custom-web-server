@@ -17,11 +17,6 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 
 
-/**
- *
- * @author Uzair
- */
-
 public class Htpassword extends ConfigurationReader {
   
   private HashMap<String, String> passwords;

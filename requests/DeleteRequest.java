@@ -5,10 +5,34 @@
  */
 package requests;
 
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import response.Response;
+import java.io.*;
+
 /**
  *
  *  
  */
-public class DeleteRequest {
+public class DeleteRequest extends Request {
+  public DeleteRequest(HashMap<String, String> request_line, HashMap<String, String> headers, String body, String absPath){
+    File file = new File(absPath);
+    if(file.delete()){
+        Response response = new Response();
+        String SC = "204";
+        List<String> records = new ArrayList<String>();
+        response.call(request_line, headers, body, absPath, records, SC);
+    } else{
+        System.out.println("Exception occurred trying to delete " + absPath);
+        String SC = "500";
+        Response response = new Response();
+        List<String> records = new ArrayList<String>();
+        response.call(request_line, headers, body, absPath, records, SC);
+    }
+          
+          
+
+  }
   
 }

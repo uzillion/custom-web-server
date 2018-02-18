@@ -3,8 +3,8 @@ import configurations.Htaccess;
 import configurations.Htpassword;
 import configurations.HttpdConf;
 import configurations.MimeTypes;
-import response.Response;
-import response.ResponseError;
+import response.*;
+import requests.*;
 import java.io.BufferedReader;
 import java.io.File;
 import java.io.IOException;
@@ -23,13 +23,16 @@ public class Worker extends Thread {
   private final InputStream client_stream;
   private final HttpdConf httpd_configs;
   private final MimeTypes mimeTypes;
+  String absPath;
   Htaccess htaccess;
   Htpassword password;
   ResponseError error;
+  ResponseFactory rf;
   Resource resource;
   String body;
+  Request request;
   
-  private final boolean DUMP = false; 
+  private final boolean DUMP = true; 
 
   
   public Worker(InputStream client_stream, HttpdConf httpd_configs, MimeTypes mimeTypes) {
@@ -48,8 +51,10 @@ public class Worker extends Thread {
     String absPath;
     String parentPath;
     String accessFileName;
+
     try {
       parse(client_stream);
+      System.out.println("worker, place 4");
       resource = new Resource(httpd_configs.getList(), request_line.get("URI"));
       absPath = resource.resolveAddresses();
       parentPath = new File(absPath).getParent();
@@ -76,12 +81,25 @@ public class Worker extends Thread {
         File file = new File(absPath);
         if(file.exists()) {
           if(resource.isScriptAliased) {
-            // run script
+            runscript();
           }
         } else {
           // Internal Error
         }
       }
+      
+      // do the methods, Get, post, delete...
+      if(request_line.get("verb").equals("GET")){
+        GetRequest request = new GetRequest(request_line, headers, body, absPath);
+      } else if (request_line.get("verb").equals("DELETE")){
+          DeleteRequest request = new DeleteRequest(request_line, headers, body, absPath);
+      } else if (request_line.get("verb").equals("POST")){
+          PostRequest request = new PostRequest(request_line, headers, body, absPath);
+      } else if (request_line.get("verb").equals("PUT")){
+          PutRequest request = new PutRequest(request_line, headers, body, absPath);
+      }
+      
+
     } catch (IOException ex) {
       error.internalError();
     }
@@ -122,7 +140,13 @@ public class Worker extends Thread {
     
      
     int request_line_length = request_line_tokens.length;
-      
+    
+    if(request_line_length != 3){
+        error.SC400();
+    }
+    
+
+    
     if(request_line_length != 0 && request_line_length <= 3) {
       request_verb = request_line_tokens[0];
       if(request_line_length == 3) {
@@ -145,6 +169,8 @@ public class Worker extends Thread {
     header = requestBuffer.readLine();
     while(header != null && header.length() != 0) {
       String[] keyValuePair = header.split(": ");
+      System.out.println("value 0 " + keyValuePair[0]);
+      System.out.println("value 1 " + keyValuePair[1]);
       headers.put(keyValuePair[0], keyValuePair[1]);
       header = requestBuffer.readLine();
     }
@@ -159,5 +185,34 @@ public class Worker extends Thread {
       if(read == content_length)
         break;
     } 
+  }
+  
+  public void fileexist(){
+    System.out.println(absPath);
+    File file = new File(absPath);
+    boolean check = file.exists();
+    if(!check & !request_line.get("verb").equals("PUT")){
+        error.SC404();
+    }
+  }
+  
+  public void runscript() throws IOException{
+      System.out.println("worker place 3");
+      System.out.println(absPath);
+      Process process;
+      try{
+        System.out.println("worker place 6");
+        process = Runtime.getRuntime().exec(absPath);
+        process.waitFor();
+        System.out.println("worker place 7");
+        System.out.println(process.exitValue());
+        if(process.exitValue() == 0)
+            error.SC200();
+        else
+            error.SC500();
+      } catch(Exception e){
+        System.out.println("worker place 5 exception e");
+        error.SC500();
+      }
   }
 }

@@ -26,6 +26,7 @@ public abstract class ConfigurationReader {
 //  InputStreamReader fileContents;
   FileReader fileContents;
 
+
   BufferedReader loadFile(String path) {
 //      URL url = getClass().getResource(path);
 //            System.out.println(url.getPath());
@@ -33,6 +34,7 @@ public abstract class ConfigurationReader {
     try {
 //            fileContents = new InputStreamReader(getClass().getResourceAsStream(path));
       fileContents = new FileReader(path);
+
     } catch (Exception e) {
 //      System.out.println("Could not load: "+ url.getPath());
     }
