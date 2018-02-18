@@ -12,14 +12,15 @@ public class Resource {
   private final HashMap<String, ArrayList> configList;
   private String URI_alias;
   private String AbsolutePath;
+  boolean isScriptAliased;
   String[] URI_tokens;
   String URI;
   
   Resource(HashMap<String, ArrayList> list, String URI) {
     this.configList = list;
     AbsolutePath = "";
+    isScriptAliased = false;
     this.URI = URI;
-    
     // Breaking URI using "/" to get the first entry path
     this.URI_tokens = URI.split("/", 3);
     
@@ -39,9 +40,10 @@ public class Resource {
       path = getAbsPath("Alias", alias_index);
     
     // Else check if alias exists as a script alias
-    else if((alias_index = checkAlias("ScriptAlias")) != -1)
+    else if((alias_index = checkAlias("ScriptAlias")) != -1) {
       path = getAbsPath("ScriptAlias", alias_index);
-    
+      isScriptAliased = true;
+    }
     // Else append documet root to unmodified URI
     else
       path = getAbsPath("DocumentRoot", 0);

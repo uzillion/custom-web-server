@@ -1,5 +1,6 @@
 
 import configurations.Htaccess;
+import configurations.Htpassword;
 import configurations.HttpdConf;
 import configurations.MimeTypes;
 import response.Response;
@@ -23,6 +24,7 @@ public class Worker extends Thread {
   private final HttpdConf httpd_configs;
   private final MimeTypes mimeTypes;
   Htaccess htaccess;
+  Htpassword password;
   ResponseError error;
   Resource resource;
   String body;
@@ -59,6 +61,26 @@ public class Worker extends Thread {
       if(authFile.exists()) {
         System.out.println("Access file exists");
         htaccess = new Htaccess(authFile.getPath());
+        if(headers.containsKey("Authorization")) {
+          boolean authorized;
+          password = new Htpassword(htaccess.getPasswordFileNmae());
+          authorized = password.isAuthorized(headers.get("Authorization"));
+          if(authorized) {
+            //Auth Error 403
+          }
+            
+        } else {
+          // Auth error 401
+        }
+      } else {
+        File file = new File(absPath);
+        if(file.exists()) {
+          if(resource.isScriptAliased) {
+            // run script
+          }
+        } else {
+          // Internal Error
+        }
       }
     } catch (IOException ex) {
       error.internalError();

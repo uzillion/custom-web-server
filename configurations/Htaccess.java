@@ -38,4 +38,12 @@ public class Htaccess extends ConfigurationReader {
     return auth_details;
   }
   
+  public String getPasswordFileNmae() {
+    if(auth_details.containsKey("AuthUserFile"))
+      return auth_details.get("AuthUserFile");
+    
+    return null;
+      
+  }
+  
 }
