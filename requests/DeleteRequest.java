@@ -16,23 +16,28 @@ import java.io.*;
  *  
  */
 public class DeleteRequest extends Request {
-  public DeleteRequest(HashMap<String, String> request_line, HashMap<String, String> headers, String body, String absPath){
+  public DeleteRequest(HashMap<String, String> request_line, HashMap<String, String> headers, String body, String absPath) throws IOException{
     File file = new File(absPath);
     if(file.delete()){
-        Response response = new Response();
+//        Response response = new Response();
         String SC = "204";
         List<String> records = new ArrayList<String>();
-        response.call(request_line, headers, body, absPath, records, SC);
+//        response.respond(request_line, headers, body, absPath, records, SC);
     } else{
         System.out.println("Exception occurred trying to delete " + absPath);
         String SC = "500";
-        Response response = new Response();
+//        Response response = new Response();
         List<String> records = new ArrayList<String>();
-        response.call(request_line, headers, body, absPath, records, SC);
+//        response.respond(request_line, headers, body, absPath, records, SC);
     }
           
           
 
+  }
+
+  @Override
+  public int getContentLength() {
+    throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
   }
   
 }

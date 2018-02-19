@@ -50,8 +50,8 @@ public class MimeTypes extends ConfigurationReader {
     }
   }
   
-  public HashMap getTypes() {
-    return types;
+  public String getType(String ext) {
+    return types.get(ext);
   }
   
   // Returns the suitable type for the given extension.

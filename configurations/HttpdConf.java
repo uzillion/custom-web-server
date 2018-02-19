@@ -26,9 +26,7 @@ public class HttpdConf extends ConfigurationReader {
   public HttpdConf(String path) throws IOException {
     configList = new HashMap<>();
     path = getClass().getResource(path).getPath();
-    System.out.println(path);
     parse(loadFile(path));
-    System.out.println(configList.toString());
   }
 
   @Override

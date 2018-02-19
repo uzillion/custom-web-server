@@ -1,4 +1,11 @@
 
+
+
+
+
+
+
+import Server.Worker;
 import configurations.HttpdConf;
 import configurations.MimeTypes;
 import java.io.BufferedReader;
@@ -21,7 +28,7 @@ import java.util.HashMap;
 public class WebServer {
   
   static final int DEFAULT_PORT = 3000;
-  static Socket client_socket;
+  public static Socket client_socket;
   static ServerSocket server_socket;
   static HttpdConf httpd_configs;
   static MimeTypes mimeTypes;
@@ -34,16 +41,15 @@ public class WebServer {
     client_socket = null;
     server_socket = new ServerSocket(DEFAULT_PORT);
 
-    startServer();
+    start();
   }
     
-  private static void startServer() throws IOException {
+  private static void start() throws IOException {
     while(true) {
       if(client_socket == null)
-        System.out.println("Server is listening...");
+        System.out.println("Server started...");
       client_socket = server_socket.accept();
-      Thread responseThread = new Worker(client_socket.getInputStream(), httpd_configs, mimeTypes);
-      
+      Thread responseThread = new Worker(client_socket, httpd_configs, mimeTypes);
       responseThread.start();
     }
   }

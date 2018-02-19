@@ -1,9 +1,13 @@
+package Server;
+
+
+
 
 import java.io.File;
 import java.util.ArrayList;
 import java.util.HashMap;
 import response.Response;
-import response.ResponseError;
+import response.ResponseStatus;
 
 /**
  *
@@ -15,15 +19,18 @@ public class Resource {
   private String URI_alias;
   private String AbsolutePath;
   boolean isScriptAliased;
-  ResponseError error;
+  ResponseStatus error;
   String[] URI_tokens;
   String URI;
+  String dirIndex;
   
   Resource(HashMap<String, ArrayList> list, String URI) {
     this.configList = list;
     AbsolutePath = "";
     isScriptAliased = false;
     this.URI = URI;
+    dirIndex = (String) list.get("DirectoryIndex").get(0);
+    dirIndex = dirIndex.replace("\"", "");
     
     // Breaking URI using "/" to get the first entry path
     this.URI_tokens = URI.split("/", 3);
@@ -39,8 +46,6 @@ public class Resource {
   String resolveAddresses() {
     String path;
     int alias_index;
-    System.out.println("check script alias");
-    System.out.println(checkAlias("ScriptAlias"));
     // Checking if the alis exists in the config file
     if((alias_index = checkAlias("Alias")) != -1)
       path = getAbsPath("Alias", alias_index);
@@ -49,12 +54,13 @@ public class Resource {
     else if((alias_index = checkAlias("ScriptAlias")) != -1) {
       path = getAbsPath("ScriptAlias", alias_index);
       isScriptAliased = true;
+      System.out.println("Script Aliased");
     }
     // Else append documet root to unmodified URI
     else
       path = getAbsPath("DocumentRoot", 0);
     
-    System.out.println("Final output path: "+path);
+//    System.out.println("Final output path: "+path);
     return path;
   }
   
@@ -84,16 +90,12 @@ public class Resource {
     if(URI_tokens.length > 2)
         path = path + URI_tokens[2];
     
-//    File file = new File(path);
-//    if(file.isFile()) {
-//      return file.getAbsolutePath();
-//    }
 
     file = new File(path);
     if(!file.isFile()) {
       if(!path.endsWith("/"))
         path += "/";
-//      path = path + "index.html";
+      path = path + dirIndex;
       file = new File(path);
     }
     

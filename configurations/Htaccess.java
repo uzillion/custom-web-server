@@ -18,7 +18,7 @@ public class Htaccess extends ConfigurationReader {
   public Htaccess(String path) {
     auth_details = new HashMap<>();
     parse(loadFile(path));
-    System.out.println(auth_details.toString());
+//    System.out.println(auth_details.toString());
   }
 
   @Override

@@ -1,8 +1,3 @@
-/*
- * To change this license header, choose License Headers in Project Properties.
- * To change this template file, choose Tools | Templates
- * and open the template in the editor.
- */
 package configurations;
 
 
@@ -21,12 +16,13 @@ public class Htpassword extends ConfigurationReader {
   
   private HashMap<String, String> passwords;
   Htaccess access;
+  String requestingUser;
 
   public Htpassword( String filename ) throws IOException {
     filename = filename.replace("\"", "");
     this.passwords = new HashMap<String, String>();
     parse(loadFile(filename));
-    System.out.println("Passwords:" + passwords.toString() );
+//    System.out.println("Passwords:" + passwords.toString() );
 
   }
   
@@ -53,10 +49,10 @@ public class Htpassword extends ConfigurationReader {
       Base64.getDecoder().decode( authInfo ),
       Charset.forName( "UTF-8" )
     );
-        System.out.println(credentials);
 
     // The string is the key:value pair username:password
     String[] tokens = credentials.split( ":" );
+    requestingUser = tokens[0];
     if(passwords.containsKey(tokens[0])) {
       if(verifyPassword(tokens[0], tokens[1])) {
         return true;
@@ -69,7 +65,7 @@ public class Htpassword extends ConfigurationReader {
 
   private boolean verifyPassword( String username, String password ) {
     String encryptedPassword = encryptClearPassword(password);
-    System.out.println(encryptedPassword);
+//    System.out.println(encryptedPassword);
     if(passwords.get(username).equals(encryptedPassword))
       return true;
     
@@ -92,6 +88,10 @@ public class Htpassword extends ConfigurationReader {
     } catch( Exception e ) {
       return "";
     }
+  }
+  
+  public String getUser() {
+    return requestingUser;
   }
 }
 

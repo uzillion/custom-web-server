@@ -14,4 +14,6 @@ import java.util.HashMap;
  */
 public abstract class Request {
   
+  public abstract int getContentLength();
+          
 }
