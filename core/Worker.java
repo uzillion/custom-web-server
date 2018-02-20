@@ -185,6 +185,12 @@ public class Worker extends Thread {
   private void runscript() throws IOException, InterruptedException{
       ProcessBuilder builder;
       builder = new ProcessBuilder(absPath);
+      Map<String, String> env = builder.environment();
+      for(Map.Entry<String, String> entry : headers.entrySet()) {
+        String key = entry.getKey();
+        String value = entry.getValue();
+        env.put(key, value);
+      }
 //      exportEnvVariables(builder);
       builder.inheritIO();
       Process process = builder.start();
@@ -222,7 +228,7 @@ public class Worker extends Thread {
   private void handleRequest(String verb, String absPath) throws IOException, InterruptedException {
     File file = new File(absPath);
     if(file.exists() || request_line.get("verb").equals("PUT")) {
-      if(resource.isScriptAliased) {
+      if(resource.isScriptAliased && (request_line.get("verb").equals("PUT") | request_line.get("verb").equals("POST"))) {
         runscript();
       } else {
         switch(verb) {
@@ -230,7 +236,7 @@ public class Worker extends Thread {
             request = new GetRequest(absPath, headers, getType(absPath), status, client_socket);
             break;
           case "DELETE":
-            request = new DeleteRequest(request_line, headers, body, absPath);
+            request = new DeleteRequest(absPath, headers, getType(absPath), status, client_socket);
             break;
           case "POST":
             request = new PostRequest(request_line, headers, body, absPath);
