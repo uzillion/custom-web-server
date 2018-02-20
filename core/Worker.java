@@ -1,10 +1,6 @@
 package core;
 
-import requests.PostRequest;
-import requests.PutRequest;
-import requests.GetRequest;
-import requests.DeleteRequest;
-import requests.Request;
+import requests.*;
 import response.ResponseFactory;
 import response.ResponseStatus;
 import configurations.Htaccess;
@@ -225,7 +221,7 @@ public class Worker extends Thread {
 
   private void handleRequest(String verb, String absPath) throws IOException, InterruptedException {
     File file = new File(absPath);
-    if(file.exists()) {
+    if(file.exists() || request_line.get("verb").equals("PUT")) {
       if(resource.isScriptAliased) {
         runscript();
       } else {
@@ -241,6 +237,9 @@ public class Worker extends Thread {
             break;
           case "PUT":
             request = new PutRequest(request_line, headers, body, absPath);
+            break;
+          case "HEAD":
+            request = new HeadRequest(absPath, headers, getType(absPath), status, client_socket);
             break;
           default:
             status.statusCode400();
