@@ -1,4 +1,4 @@
-package Server;
+package core;
 
 
 
@@ -74,21 +74,24 @@ public class Resource {
 
   // Gets absolute path of the directory by checking various conditions
   private String getAbsPath(String configKey, int alias_index) {
-    String path;
+    String path = "";
     File file;
-    if(!configKey.equals("DocumentRoot"))
+    if(!configKey.equals("DocumentRoot")) {
       // If alias exists, the resolved path will be stored in the next index
       path = (String) configList.get(configKey).get(alias_index+1);
-    // else, if alias does not exist
-    else
-      path = (String) configList.get(configKey).get(alias_index);
-    
-    path = path.replace("\"", ""); 
-
-    
-    // If alias was not end point, append the remainder of the path to the modified URI
-    if(URI_tokens.length > 2)
+      path = path.replace("\"", "");
+      if(URI_tokens.length > 2)
         path = path + URI_tokens[2];
+    }
+    // else, if alias does not exist
+    else {
+      path = (String) configList.get(configKey).get(alias_index);
+      path = path.replace("\"", ""); 
+      // If alias was not end point, append the remainder of the path to the modified URI
+      path = path.substring(0, path.length()-1);
+      path = path + URI;
+//      System.out.println(path);
+    }
     
 
     file = new File(path);

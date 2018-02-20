@@ -1,4 +1,4 @@
-package Server;
+package core;
 
 import requests.PostRequest;
 import requests.PutRequest;
@@ -27,7 +27,6 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.TimeZone;
 import java.util.logging.Level;
-import java.util.logging.Logger;
 
 
 public class Worker extends Thread {
@@ -37,7 +36,7 @@ public class Worker extends Thread {
   private final InputStream client_stream;
   private final HttpdConf httpd_configs;
   private final MimeTypes mimeTypes;
-  public static Socket client_socket;
+  public Socket client_socket;
   String absPath;
   Htaccess htaccess;
   Htpassword password;
@@ -45,6 +44,7 @@ public class Worker extends Thread {
   ResponseStatus status;
   ResponseFactory rf;
   Resource resource;
+  Logger logger;
   String body;
   String date;
   
@@ -57,6 +57,7 @@ public class Worker extends Thread {
     headers = new HashMap<>();
     body = "";
     status = new ResponseStatus();
+    logger = new Logger((String) httpd_configs.getList().get("LogFile").get(0));
     this.client_stream = client_socket.getInputStream();
     this.httpd_configs = httpd_configs;
     this.mimeTypes = mimeTypes;
@@ -89,9 +90,15 @@ public class Worker extends Thread {
     } finally {
       try {
         client_stream.close();
+        client_socket.close();
       } catch (IOException ex) {
       }
       System.out.println(logBuilder());
+      try {
+        logger.writeLog(logBuilder());
+      } catch (IOException ex) {
+        java.util.logging.Logger.getLogger(Worker.class.getName()).log(Level.SEVERE, null, ex);
+      }
     }
   }
   
@@ -224,7 +231,7 @@ public class Worker extends Thread {
       } else {
         switch(verb) {
           case "GET":
-            request = new GetRequest(absPath, getType(absPath), status);
+            request = new GetRequest(absPath, headers, getType(absPath), status, client_socket);
             break;
           case "DELETE":
             request = new DeleteRequest(request_line, headers, body, absPath);
@@ -292,7 +299,7 @@ public class Worker extends Thread {
   private String getLogTime() {
     Calendar calendar = Calendar.getInstance();
     SimpleDateFormat dateFormat = new SimpleDateFormat("dd/MMM/yyyy:HH:mm:ss Z", Locale.US);
-    dateFormat.setTimeZone(TimeZone.getTimeZone("PST"));
+    dateFormat.setTimeZone(TimeZone.getTimeZone("GMT"));
     return dateFormat.format(calendar.getTime());
   }
 }
