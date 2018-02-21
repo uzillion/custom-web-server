@@ -64,21 +64,29 @@ public class Worker extends Thread {
   public void run() {
     try {
       parse(client_stream);
-      resource = new Resource(httpd_configs.getList(), request_line.get("URI"));
+      resource = new Resource(httpd_configs.getList(), request_line.get("URI"), request_line.get("verb"));
       absPath = resource.resolveAddresses();
-      String accessFilePath = getAccessFilePath(absPath);
-      File authFile = new File(accessFilePath);
-      if(authFile.exists()) {
-//        System.out.println("Access file exists");
-        boolean authorized;
-        authorized = checkAuthorization(authFile);
-        if(authorized) {
-          handleRequest(request_line.get("verb"), absPath);
+      if(new File(absPath).exists() || request_line.get("verb").equals("PUT")) {
+        String accessFilePath = getAccessFilePath(absPath);
+        File authFile = new File(accessFilePath);
+        if(authFile.exists()) {
+          boolean authorized;
+          authorized = checkAuthorization(authFile);
+          if(authorized) {
+            if(resource.isScriptAliased)
+              runscript();
+            else
+              handleRequest(request_line.get("verb"));
+          }
+        } else {
+          if(resource.isScriptAliased)
+              runscript();
+          else
+              handleRequest(request_line.get("verb"));
         }
-        
       } else {
-        handleRequest(request_line.get("verb"), absPath);
-      }      
+        status.statusCode404();
+      }
       
     } catch (Exception e) {
       e.printStackTrace();
@@ -110,7 +118,7 @@ public class Worker extends Thread {
     
     parseRequestLine(requestBuffer);
     parseHeaders(requestBuffer);
-    if(headers.containsKey("content-length"))
+    if(headers.containsKey("Content-Length"))
       parseBody(requestBuffer);
     
     
@@ -163,7 +171,7 @@ public class Worker extends Thread {
 
   private void parseBody(BufferedReader requestBuffer) throws IOException {
     int c, read = 0;
-    int content_length = Integer.parseInt(headers.get("content-length"));
+    int content_length = Integer.parseInt(headers.get("Content-Length"));
     while((c=requestBuffer.read()) != -1) {
       body += (char)c;
       read++;
@@ -230,12 +238,7 @@ public class Worker extends Thread {
     return authorized;
   }
 
-  private void handleRequest(String verb, String absPath) throws IOException, InterruptedException {
-    File file = new File(absPath);
-    if(file.exists() || request_line.get("verb").equals("PUT")) {
-      if(resource.isScriptAliased) {
-        runscript();
-      } else {
+  private void handleRequest(String verb) throws IOException, InterruptedException {
         switch(verb) {
           case "GET":
             request = new GetRequest(absPath, headers, getType(absPath), status, client_socket);
@@ -256,10 +259,6 @@ public class Worker extends Thread {
             status.statusCode400();
             
         }
-      }
-    } else {
-      status.statusCode404();
-    }
   }
   
   String getType(String path) {
@@ -313,13 +312,16 @@ public class Worker extends Thread {
     return dateFormat.format(calendar.getTime());
   }
 
-  private void redirectOutput(ProcessBuilder processBuilder) throws IOException {
+  private void redirectOutput(ProcessBuilder processBuilder) throws IOException, InterruptedException {
     
       String scriptParent = new File(absPath).getParent();
       System.out.println(scriptParent);
       File outputFile = new File(scriptParent+"/scriptOutput.txt");
       outputFile.createNewFile();
       processBuilder.redirectOutput(outputFile);
+      absPath = outputFile.getAbsolutePath();
+      handleRequest(body);
+      
   }
 
   private void writeToProcessSTDIN(Process process) throws IOException, IOException {

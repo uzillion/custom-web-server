@@ -33,18 +33,12 @@ public class DeleteRequest extends Request {
     this.status = status;
     
     if(file.delete()){
-//        Response response = new Response();
-        String SC = "204";
         List<String> records = new ArrayList<String>();
         status.statusCode204();
-//        response.respond(request_line, headers, body, absPath, records, SC);
     } else{
         System.out.println("Exception occurred trying to delete " + absPath);
-        String SC = "500";
         status.statusCode500();
-//        Response response = new Response();
         List<String> records = new ArrayList<String>();
-//        response.respond(request_line, headers, body, absPath, records, SC);
     }
     
     response = new Response(response_content, content_length, type, status, client);

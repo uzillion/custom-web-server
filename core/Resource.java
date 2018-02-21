@@ -23,8 +23,10 @@ public class Resource {
   String[] URI_tokens;
   String URI;
   String dirIndex;
+  String verb;
   
-  Resource(HashMap<String, ArrayList> list, String URI) {
+  Resource(HashMap<String, ArrayList> list, String URI, String verb) {
+    this.verb = verb;
     this.configList = list;
     AbsolutePath = "";
     isScriptAliased = false;
@@ -60,8 +62,6 @@ public class Resource {
     else
       path = getAbsPath("DocumentRoot", 0);
     
-      String scriptParent = new File(path).getParent();
-      System.out.println(scriptParent);
 //    System.out.println("Final output path: "+path);
     return path;
   }
@@ -95,9 +95,9 @@ public class Resource {
 //      System.out.println(path);
     }
     
-
+    
     file = new File(path);
-    if(!file.isFile()) {
+    if(!file.isFile() && (verb.equals("HEAD") || verb.equals("GET"))) {
       if(!path.endsWith("/"))
         path += "/";
       path = path + dirIndex;

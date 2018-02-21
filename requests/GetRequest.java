@@ -57,7 +57,6 @@ public class GetRequest extends Request {
     String body = "";
     int c;
     FileReader reader = new FileReader(path);
-    String line;
     while ((c = reader.read()) != -1) {
       content_length++;
       body += (char)c;
