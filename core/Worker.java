@@ -1,10 +1,6 @@
 package core;
 
-import requests.PostRequest;
-import requests.PutRequest;
-import requests.GetRequest;
-import requests.DeleteRequest;
-import requests.Request;
+import requests.*;
 import response.ResponseFactory;
 import response.ResponseStatus;
 import configurations.Htaccess;
@@ -187,15 +183,21 @@ public class Worker extends Thread {
   }
   
   private void runscript() throws IOException, InterruptedException{
-      ProcessBuilder processBuilder;
-      processBuilder = new ProcessBuilder(absPath);
+    
+      ProcessBuilder builder;
+      builder = new ProcessBuilder(absPath);
+      Map<String, String> env = builder.environment();
+      for(Map.Entry<String, String> entry : headers.entrySet()) {
+        String key = entry.getKey();
+        String value = entry.getValue();
+        env.put(key, value);
+      }
 //      exportEnvVariables(builder);
       String scriptParent = new File(absPath).getParent();
-      System.out.println(scriptParent);
       File outputFile = new File(scriptParent+"/scriptOutput.txt");
       outputFile.createNewFile();
-      processBuilder.redirectOutput(outputFile);
-      Process process = processBuilder.start();
+      builder.redirectOutput(outputFile);
+      Process process = builder.start();
       
 //      BufferedReader reader = new BufferedReader(new InputStreamReader(process.getInputStream()));
 //      StringBuilder builder = new StringBuilder();
@@ -238,7 +240,7 @@ public class Worker extends Thread {
 
   private void handleRequest(String verb, String absPath) throws IOException, InterruptedException {
     File file = new File(absPath);
-    if(file.exists()) {
+    if(file.exists() || request_line.get("verb").equals("PUT")) {
       if(resource.isScriptAliased) {
         runscript();
       } else {
@@ -247,13 +249,16 @@ public class Worker extends Thread {
             request = new GetRequest(absPath, headers, getType(absPath), status, client_socket);
             break;
           case "DELETE":
-            request = new DeleteRequest(request_line, headers, body, absPath);
+            request = new DeleteRequest(absPath, headers, getType(absPath), status, client_socket);
             break;
           case "POST":
             request = new PostRequest(request_line, headers, body, absPath);
             break;
           case "PUT":
             request = new PutRequest(request_line, headers, body, absPath);
+            break;
+          case "HEAD":
+            request = new HeadRequest(absPath, headers, getType(absPath), status, client_socket);
             break;
           default:
             status.statusCode400();
