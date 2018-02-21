@@ -14,6 +14,7 @@ public class Logger {
   
   public Logger(String path) {
     logPath = path;
+    logPath = logPath.replace("\"", "");
     File logFile = new File(path);
     if(!logFile.exists())
       createLogFile(path);

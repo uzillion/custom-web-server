@@ -113,7 +113,6 @@ public class Worker extends Thread {
     if(headers.containsKey("content-length"))
       parseBody(requestBuffer);
     
-//    requestBuffer.close();
     
     if(DUMP) {
       System.out.println();
@@ -186,30 +185,23 @@ public class Worker extends Thread {
     
       ProcessBuilder builder;
       builder = new ProcessBuilder(absPath);
+      
       Map<String, String> env = builder.environment();
       for(Map.Entry<String, String> entry : headers.entrySet()) {
         String key = entry.getKey();
         String value = entry.getValue();
         env.put(key, value);
       }
-//      exportEnvVariables(builder);
-      String scriptParent = new File(absPath).getParent();
-      File outputFile = new File(scriptParent+"/scriptOutput.txt");
-      outputFile.createNewFile();
-      builder.redirectOutput(outputFile);
+      redirectOutput(builder);
       Process process = builder.start();
       
-//      BufferedReader reader = new BufferedReader(new InputStreamReader(process.getInputStream()));
-//      StringBuilder builder = new StringBuilder();
-//      String line = null;
-//      while ( (line = reader.readLine()) != null) {
-//        builder.append(line);
-//        builder.append(System.getProperty("line.separator"));
-//      }
-//      String result = builder.toString();
+      String verb = request_line.get("verb");
+      if(verb.equals("PUT") || verb.equals("POST")) {
+        writeToProcessSTDIN(process);
+        
+      }
+
       process.waitFor();
-//      if(body.length() > 0)
-//        pipeBodyToScript(process);
   }
 
   private String getAccessFilePath(String absPath) {
@@ -319,5 +311,20 @@ public class Worker extends Thread {
     SimpleDateFormat dateFormat = new SimpleDateFormat("dd/MMM/yyyy:HH:mm:ss Z", Locale.US);
     dateFormat.setTimeZone(TimeZone.getTimeZone("GMT"));
     return dateFormat.format(calendar.getTime());
+  }
+
+  private void redirectOutput(ProcessBuilder processBuilder) throws IOException {
+    
+      String scriptParent = new File(absPath).getParent();
+      System.out.println(scriptParent);
+      File outputFile = new File(scriptParent+"/scriptOutput.txt");
+      outputFile.createNewFile();
+      processBuilder.redirectOutput(outputFile);
+  }
+
+  private void writeToProcessSTDIN(Process process) throws IOException, IOException {
+    OutputStream stdin = process.getOutputStream();
+    BufferedWriter writer = new BufferedWriter(new OutputStreamWriter(stdin));
+    writer.write(body);
   }
 }
