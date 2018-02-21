@@ -187,11 +187,24 @@ public class Worker extends Thread {
   }
   
   private void runscript() throws IOException, InterruptedException{
-      ProcessBuilder builder;
-      builder = new ProcessBuilder(absPath);
+      ProcessBuilder processBuilder;
+      processBuilder = new ProcessBuilder(absPath);
 //      exportEnvVariables(builder);
-      builder.inheritIO();
-      Process process = builder.start();
+      String scriptParent = new File(absPath).getParent();
+      System.out.println(scriptParent);
+      File outputFile = new File(scriptParent+"/scriptOutput.txt");
+      outputFile.createNewFile();
+      processBuilder.redirectOutput(outputFile);
+      Process process = processBuilder.start();
+      
+//      BufferedReader reader = new BufferedReader(new InputStreamReader(process.getInputStream()));
+//      StringBuilder builder = new StringBuilder();
+//      String line = null;
+//      while ( (line = reader.readLine()) != null) {
+//        builder.append(line);
+//        builder.append(System.getProperty("line.separator"));
+//      }
+//      String result = builder.toString();
       process.waitFor();
 //      if(body.length() > 0)
 //        pipeBodyToScript(process);

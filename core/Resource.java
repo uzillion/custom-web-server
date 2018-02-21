@@ -60,6 +60,8 @@ public class Resource {
     else
       path = getAbsPath("DocumentRoot", 0);
     
+      String scriptParent = new File(path).getParent();
+      System.out.println(scriptParent);
 //    System.out.println("Final output path: "+path);
     return path;
   }

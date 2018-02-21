@@ -35,6 +35,7 @@ public class GetRequest extends Request {
   Socket client;
   
   public GetRequest(String absPath, HashMap<String, String> headers, String type, ResponseStatus status, Socket socket) throws IOException, InterruptedException{
+    System.out.println(absPath);
     response_content = new ArrayList<>();
     client = socket;
     this.type = type;
@@ -45,6 +46,7 @@ public class GetRequest extends Request {
       loadImage(absPath);
     } else {
       content_length = loadResponseContent(absPath);
+//      System.out.println(content_length);
       response = new Response(response_content, content_length, type, status, client);
     }
     response.respond(type);
@@ -52,12 +54,16 @@ public class GetRequest extends Request {
 
   private int loadResponseContent(String path) throws FileNotFoundException, IOException {
     int content_length = 0;
-    BufferedReader reader = new BufferedReader(new FileReader(path));
+    String body = "";
+    int c;
+    FileReader reader = new FileReader(path);
     String line;
-    while ((line = reader.readLine()) != null) {
-      content_length += getSize(line);
-      response_content.add(line);
+    while ((c = reader.read()) != -1) {
+      content_length++;
+      body += (char)c;
     }
+    response_content.add(body);
+
     reader.close();
     return content_length;
   }
