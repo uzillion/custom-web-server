@@ -2,6 +2,7 @@ package configurations;
 
 
 import java.io.BufferedReader;
+import java.io.File;
 import java.io.FileReader;
 import java.io.IOException;
 import java.util.ArrayList;
@@ -22,8 +23,9 @@ public class HttpdConf extends ConfigurationReader {
   
   private final HashMap<String, ArrayList> configList;
   
-  public HttpdConf(String path) {
-    configList = new HashMap<String, ArrayList>();
+  public HttpdConf(String path) throws IOException {
+    configList = new HashMap<>();
+    path = getClass().getResource(path).getPath();
     parse(loadFile(path));
   }
 
@@ -53,7 +55,7 @@ public class HttpdConf extends ConfigurationReader {
     }
   }
   
-  public HashMap getList() {
+  public HashMap<String, ArrayList> getList() {
     return configList;
   }
 }

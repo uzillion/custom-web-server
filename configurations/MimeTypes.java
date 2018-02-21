@@ -22,6 +22,7 @@ public class MimeTypes extends ConfigurationReader {
   
   public MimeTypes(String path) {
     types = new HashMap<String, String>();
+    path = getClass().getResource(path).getPath();
     parse(loadFile(path));
   }
   
@@ -49,8 +50,8 @@ public class MimeTypes extends ConfigurationReader {
     }
   }
   
-  public HashMap getTypes() {
-    return types;
+  public String getType(String ext) {
+    return types.get(ext);
   }
   
   // Returns the suitable type for the given extension.

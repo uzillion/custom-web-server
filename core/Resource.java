@@ -1,7 +1,13 @@
+package core;
+
+
+
 
 import java.io.File;
 import java.util.ArrayList;
 import java.util.HashMap;
+import response.Response;
+import response.ResponseStatus;
 
 /**
  *
@@ -9,16 +15,24 @@ import java.util.HashMap;
  */
 public class Resource {
   
-  private HashMap<String, ArrayList<String>> configList;
+  private final HashMap<String, ArrayList> configList;
   private String URI_alias;
   private String AbsolutePath;
+  boolean isScriptAliased;
+  ResponseStatus error;
   String[] URI_tokens;
   String URI;
+  String dirIndex;
+  String verb;
   
-  Resource(HashMap<String, ArrayList<String>> list, String URI) {
+  Resource(HashMap<String, ArrayList> list, String URI, String verb) {
+    this.verb = verb;
     this.configList = list;
     AbsolutePath = "";
+    isScriptAliased = false;
     this.URI = URI;
+    dirIndex = (String) list.get("DirectoryIndex").get(0);
+    dirIndex = dirIndex.replace("\"", "");
     
     // Breaking URI using "/" to get the first entry path
     this.URI_tokens = URI.split("/", 3);
@@ -31,28 +45,25 @@ public class Resource {
       this.URI_alias = this.URI_alias + "/";
   }
 
-  void resolveAddresses() {
+  String resolveAddresses() {
     String path;
     int alias_index;
     // Checking if the alis exists in the config file
-    if((alias_index = checkAlias("Alias")) != -1) {
+    if((alias_index = checkAlias("Alias")) != -1)
       path = getAbsPath("Alias", alias_index);
-      // send path to appropriate class
-    }
     
     // Else check if alias exists as a script alias
     else if((alias_index = checkAlias("ScriptAlias")) != -1) {
       path = getAbsPath("ScriptAlias", alias_index);
-      // send path to appropriate class
+      isScriptAliased = true;
+      System.out.println("Script Aliased");
     }
-    
     // Else append documet root to unmodified URI
-    else {
+    else
       path = getAbsPath("DocumentRoot", 0);
-    }
     
-    System.out.println("Final output path: "+path);
-      
+//    System.out.println("Final output path: "+path);
+    return path;
   }
   
   private int checkAlias(String alias) {
@@ -65,32 +76,35 @@ public class Resource {
 
   // Gets absolute path of the directory by checking various conditions
   private String getAbsPath(String configKey, int alias_index) {
-    String path;
+    String path = "";
+    File file;
     if(!configKey.equals("DocumentRoot")) {
       // If alias exists, the resolved path will be stored in the next index
-      path = configList.get(configKey).get(alias_index+1);
-      // Taking out double quotes from around resolved path
-      path = path.substring(1, path.length()-1);
+      path = (String) configList.get(configKey).get(alias_index+1);
+      path = path.replace("\"", "");
+      if(URI_tokens.length > 2)
+        path = path + URI_tokens[2];
     }
     // else, if alias does not exist
     else {
-      path = configList.get(configKey).get(alias_index);
-      path = path.substring(1, path.length()-1); 
+      path = (String) configList.get(configKey).get(alias_index);
+      path = path.replace("\"", ""); 
+      // If alias was not end point, append the remainder of the path to the modified URI
+      path = path.substring(0, path.length()-1);
+      path = path + URI;
+//      System.out.println(path);
     }
     
-    // If alias was not end point, append the remainder of the path to the modified URI
-    if(URI_tokens.length > 2)
-        path = path + URI_tokens[2];
     
-    File file = new File(path);
-    if(file.isFile()) {
-      return file.getAbsolutePath();
-    }
-    // If is not a file, appending directory index to the path
-    else {
-      path = path + "/index.html";
+    file = new File(path);
+    if(!file.isFile() && (verb.equals("HEAD") || verb.equals("GET"))) {
+      if(!path.endsWith("/"))
+        path += "/";
+      path = path + dirIndex;
       file = new File(path);
-      return file.getAbsolutePath();
     }
+    
+    return file.getAbsolutePath();
+      
   }
 }
