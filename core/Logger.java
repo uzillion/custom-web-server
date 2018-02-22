@@ -12,12 +12,12 @@ public class Logger {
   String logPath;
   String rootPath;
   
-  public Logger(String path) {
+  public Logger(String path) throws IOException {
     logPath = path;
     logPath = logPath.replace("\"", "");
-    File logFile = new File(path);
+    File logFile = new File(logPath);
     if(!logFile.exists())
-      createLogFile(path);
+      logFile.createNewFile();
   }
   
   
@@ -26,9 +26,5 @@ public class Logger {
     writer.write(log);
     writer.write("\r\n");
     writer.close();
-  }
-
-  private void createLogFile(String path) {
-    
   }
 }

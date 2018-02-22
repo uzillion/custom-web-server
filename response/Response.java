@@ -7,6 +7,7 @@ import java.io.OutputStream;
 import java.io.PrintWriter;
 import java.net.Socket;
 import java.util.ArrayList;
+import java.util.HashMap;
 
 
 public class Response {
@@ -15,43 +16,49 @@ public class Response {
   ArrayList<String> response_content;
   Socket client;
   byte[] size;
-  ByteArrayOutputStream imageStream;
-  int content_length;
+  ByteArrayOutputStream imageByteStream;
+  private OutputStream response_stream;
+  
 
-  public Response(ArrayList<String> response_content, int content_length, String type, ResponseStatus status, Socket client) {
-    this.client = client;
-    factory = new ResponseFactory();
-    this.content_length = content_length;
-    this.response_content = factory.create(response_content, content_length, type, status);
+  public Response(ResponseStatus status, HashMap<String, String> response_headers, OutputStream response_stream) {
+    initializeData(response_stream);
+    this.response_content = factory.create(status, response_headers);
+  }
+
+  public Response(ResponseStatus status, HashMap<String, String> response_headers, String body, OutputStream response_stream) {
+    initializeData(response_stream);
+    this.response_content = factory.create(status, response_headers, body);
+  }
+
+  public Response(ResponseStatus status, HashMap<String, String> response_headers, ByteArrayOutputStream imageByteStream, OutputStream response_stream) {
+    initializeData(response_stream);
+    this.imageByteStream = imageByteStream;
+    this.response_content = factory.create(status, response_headers);
   }
   
-  public Response(ByteArrayOutputStream stream, String type, ResponseStatus status, Socket client) {
-    this.client = client;
-    imageStream = stream;
-    this.response_content = new ArrayList<>();
+  public Response(ResponseStatus status, OutputStream responseStream) {
+    initializeData(response_stream);
+    HashMap<String, String> response_headers = new HashMap<>();
+    this.response_content = factory.create(status, response_headers);
+  }
+  
+  void initializeData(OutputStream response_stream) {
+    this.response_stream = response_stream;
+    this.imageByteStream = null;
     factory = new ResponseFactory();
-    this.content_length = stream.size();
-    this.response_content = factory.create(response_content, content_length, type, status);
   }
  
-  public void respond(String type) throws IOException {
-      OutputStream outputStream = client.getOutputStream();
-
-      PrintWriter out = new PrintWriter( outputStream, true );
+  public void respond() throws IOException {
+    PrintWriter out = new PrintWriter( response_stream, true );
     if(!response_content.isEmpty()){
       for (String line: response_content) {
         out.println(line);
       }
     }
-    if(type.contains("image")) {
-      imageStream.writeTo(outputStream);
-      imageStream.close();
+    if(imageByteStream != null) {
+      imageByteStream.writeTo(response_stream);
+      imageByteStream.close();
     }
+    out.close();
   }
-  
-  public int getContentLength() {
-    return content_length;
-  }
-
-  
 }

@@ -1,7 +1,6 @@
 package core;
 
 import requests.*;
-import response.ResponseFactory;
 import response.ResponseStatus;
 import configurations.Htaccess;
 import configurations.Htpassword;
@@ -22,7 +21,7 @@ import java.util.HashMap;
 import java.util.Locale;
 import java.util.Map;
 import java.util.TimeZone;
-import java.util.logging.Level;
+import response.Response;
 
 
 public class Worker extends Thread {
@@ -38,7 +37,7 @@ public class Worker extends Thread {
   Htpassword password;
   Request request;
   ResponseStatus status;
-  ResponseFactory rf;
+  Response response;
   Resource resource;
   Logger logger;
   String body;
@@ -64,7 +63,7 @@ public class Worker extends Thread {
   public void run() {
     try {
       parse(client_stream);
-      resource = new Resource(httpd_configs.getList(), request_line.get("URI"), request_line.get("verb"));
+      resource = new Resource(httpd_configs.getList(), request_line);
       absPath = resource.resolveAddresses();
       if(new File(absPath).exists() || request_line.get("verb").equals("PUT")) {
         String accessFilePath = getAccessFilePath(absPath);
@@ -88,8 +87,7 @@ public class Worker extends Thread {
         status.statusCode404();
       }
       
-    } catch (Exception e) {
-      e.printStackTrace();
+    } catch(IOException e) {
       status.statusCode500();
     } finally {
       try {
@@ -101,7 +99,7 @@ public class Worker extends Thread {
       try {
         logger.writeLog(logBuilder());
       } catch (IOException ex) {
-        java.util.logging.Logger.getLogger(Worker.class.getName()).log(Level.SEVERE, null, ex);
+        System.err.println("Failed to output log to file");
       }
     }
   }
@@ -180,17 +178,8 @@ public class Worker extends Thread {
     } 
   }
   
-  public void fileexist(){
-    System.out.println(absPath);
-    File file = new File(absPath);
-    boolean check = file.exists();
-    if(!check & !request_line.get("verb").equals("PUT")){
-        status.statusCode404();
-    }
-  }
-  
-  private void runscript() throws IOException, InterruptedException{
-    
+  private void runscript() {
+    try {
       ProcessBuilder builder;
       builder = new ProcessBuilder(absPath);
       
@@ -210,6 +199,11 @@ public class Worker extends Thread {
       }
 
       process.waitFor();
+    }
+    catch(Exception e) {
+      System.err.println("Problem running script.");
+      status.statusCode500();
+    }
   }
 
   private String getAccessFilePath(String absPath) {
@@ -238,27 +232,30 @@ public class Worker extends Thread {
     return authorized;
   }
 
-  private void handleRequest(String verb) throws IOException, InterruptedException {
-        switch(verb) {
-          case "GET":
-            request = new GetRequest(absPath, headers, getType(absPath), status, client_socket);
-            break;
-          case "DELETE":
-            request = new DeleteRequest(absPath, headers, getType(absPath), status, client_socket);
-            break;
-          case "POST":
-            request = new PostRequest(request_line, headers, body, absPath);
-            break;
-          case "PUT":
-            request = new PutRequest(request_line, headers, body, absPath);
-            break;
-          case "HEAD":
-            request = new HeadRequest(absPath, headers, getType(absPath), status, client_socket);
-            break;
-          default:
-            status.statusCode400();
-            
-        }
+  private void handleRequest(String verb) throws IOException {
+    switch(verb) {
+      case "GET":
+        request = new GetRequest(absPath, headers, getType(absPath), status, client_socket.getOutputStream());
+        break;
+      case "DELETE":
+        request = new DeleteRequest(absPath, headers, status, client_socket.getOutputStream());
+        break;
+      case "POST":
+        request = new PostRequest(absPath, headers, body, status, client_socket.getOutputStream());
+        break;
+      case "PUT":
+        request = new PutRequest(absPath, headers, status, client_socket.getOutputStream());
+        break;
+      case "HEAD":
+        request = new HeadRequest(absPath, headers, getType(absPath), status, client_socket.getOutputStream());
+        break;
+      default:
+        status.statusCode400();
+        return;
+    }
+    
+    response = request.createResponse();
+    response.respond();
   }
   
   String getType(String path) {
@@ -286,10 +283,12 @@ public class Worker extends Thread {
   private String logBuilder() {
     String log_entry = "";
     log_entry += client_socket.getRemoteSocketAddress()+" ";
+    
     if(password != null)
       log_entry += password.getUser()+" ";
     else
       log_entry += "- ";
+    
     log_entry += "["+getLogTime()+"] ";
     log_entry += "\""+request_line.get("verb")+" ";
     log_entry += request_line.get("URI")+" ";
@@ -315,7 +314,6 @@ public class Worker extends Thread {
   private void redirectOutput(ProcessBuilder processBuilder) throws IOException, InterruptedException {
     
       String scriptParent = new File(absPath).getParent();
-      System.out.println(scriptParent);
       File outputFile = new File(scriptParent+"/scriptOutput.txt");
       outputFile.createNewFile();
       processBuilder.redirectOutput(outputFile);

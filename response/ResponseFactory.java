@@ -3,7 +3,9 @@ package response;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Calendar;
+import java.util.HashMap;
 import java.util.Locale;
+import java.util.Map;
 import java.util.TimeZone;
 
 /*
@@ -19,21 +21,30 @@ import java.util.TimeZone;
 public class ResponseFactory {
     final String PROTOCOL = "HTTP/1.1";
     final String SERVER_NAME = "Server of HardWork";
-
-  ArrayList create(ArrayList<String> response_content, int content_length, String type, ResponseStatus status) {
-    String status_line = PROTOCOL + " " + status.getStatusCode() + " " + status.getStatusPhrase();
-    String headers = generateHeaders(content_length, type);
+    ArrayList<String> response_content = new ArrayList<>();
+    String status_line;
+  
+  ArrayList<String> create(ResponseStatus status, HashMap<String, String> response_headers) {
+    status_line = PROTOCOL + " " + status.getStatusCode() + " " + status.getStatusPhrase();
+    String headers = generateHeaders(response_headers);
     response_content.add(0, headers);
     response_content.add(0, status_line);
     return response_content;
   }
   
+  ArrayList<String> create(ResponseStatus status, HashMap<String, String> response_headers, String body) {
+    response_content.add(0, body);
+    return create(status, response_headers);
+  }
   
-  private String generateHeaders(int content_length, String type) {
+  private String generateHeaders(HashMap<String, String> response_headers) {
 
     String headers = "";
-    headers += "Content-Type: "+type+"\r\n";
-    headers += "Content-Length: "+content_length+"\r\n";
+    for(Map.Entry<String, String> header : response_headers.entrySet()) {
+        String key = header.getKey();
+        String value = header.getValue();
+        headers += key + ": "+value+"\r\n";
+      }
     headers += "Date: "+getHttpTime()+"\r\n";
     headers += "Server: "+SERVER_NAME+"\r\n";
     return headers;

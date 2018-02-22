@@ -17,7 +17,6 @@ public class Resource {
   
   private final HashMap<String, ArrayList> configList;
   private String URI_alias;
-  private String AbsolutePath;
   boolean isScriptAliased;
   ResponseStatus error;
   String[] URI_tokens;
@@ -25,16 +24,17 @@ public class Resource {
   String dirIndex;
   String verb;
   
-  Resource(HashMap<String, ArrayList> list, String URI, String verb) {
-    this.verb = verb;
+  Resource(HashMap<String, ArrayList> list, HashMap<String, String> request_line) {
     this.configList = list;
-    AbsolutePath = "";
+    URI = request_line.get("URI");
+    verb = request_line.get("verb");
+    
     isScriptAliased = false;
-    this.URI = URI;
+
     dirIndex = (String) list.get("DirectoryIndex").get(0);
     dirIndex = dirIndex.replace("\"", "");
     
-    // Breaking URI using "/" to get the first entry path
+    // Breaking URI into tokens using "/" to get the first entry path
     this.URI_tokens = URI.split("/", 3);
     
     // Storing the entry path to check against aliases

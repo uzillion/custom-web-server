@@ -1,21 +1,14 @@
-/*
- * To change this license header, choose License Headers in Project Properties.
- * To change this template file, choose Tools | Templates
- * and open the template in the editor.
- */
+
 package requests;
 
 import java.awt.image.BufferedImage;
 import response.Response;
-import java.util.ArrayList;
-import java.io.BufferedReader;
 import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.FileReader;
 import java.io.IOException;
-import java.io.UnsupportedEncodingException;
-import java.net.Socket;
+import java.io.OutputStream;
 import java.text.SimpleDateFormat;
 import java.util.Calendar;
 import java.util.HashMap;
@@ -28,64 +21,58 @@ import response.ResponseStatus;
 public class GetRequest extends Request {
   
   Response response;
-  ArrayList<String> response_content;
   int content_length;
   String type;
   ResponseStatus status;
-  Socket client;
+  OutputStream response_stream;
+  HashMap<String, String> request_headers;
+  HashMap<String, String> response_headers;
+  String absPath;
+  String body;
+  ByteArrayOutputStream imageByteStream; 
   
-  public GetRequest(String absPath, HashMap<String, String> headers, String type, ResponseStatus status, Socket socket) throws IOException, InterruptedException{
-    System.out.println(absPath);
-    response_content = new ArrayList<>();
-    client = socket;
+  public GetRequest(String absPath, HashMap<String, String> headers, String type, ResponseStatus status, OutputStream responseStream) {
+    this.response_stream = responseStream;
+    request_headers = headers;
     this.type = type;
     this.status = status;
-    if(headers.containsKey("Last-Modified"))
-      checkModifiedStatus(absPath, headers.get("Last-Modified"));
-    if(type.contains("image")) {
-      loadImage(absPath);
-    } else {
-      content_length = loadResponseContent(absPath);
-//      System.out.println(content_length);
-      response = new Response(response_content, content_length, type, status, client);
-    }
-    response.respond(type);
-  }
-
-  private int loadResponseContent(String path) throws FileNotFoundException, IOException {
-    int content_length = 0;
-    String body = "";
-    int c;
-    FileReader reader = new FileReader(path);
-    while ((c = reader.read()) != -1) {
-      content_length++;
-      body += (char)c;
-    }
-    response_content.add(body);
-
-    reader.close();
-    return content_length;
-  }
-  
-  private int getSize(String string) throws UnsupportedEncodingException {
-    byte[] bytes = string.getBytes("UTF-8");
-    return bytes.length;
+    this.absPath = absPath;
+    response_headers = new HashMap<>();
   }
   
   @Override
-  public int getContentLength() {
-    return response.getContentLength();
+  public Response createResponse() {
+    
+    if(request_headers.containsKey("Last-Modified"))
+      checkModifiedStatus(absPath, request_headers.get("Last-Modified"));
+        
+    if(type.contains("image")) {
+      try {
+        content_length = loadImage(absPath);
+      } catch (IOException ex) {
+        System.err.println("Failed to load image.");
+        status.statusCode500();
+      }
+      loadGeneralHeaders();
+      return new Response(status, response_headers, imageByteStream, response_stream);
+    } else {
+      try {
+        content_length = loadResponseContent(absPath);
+      } catch (IOException ex) {
+        System.err.println("Failed to load rosource contents.");
+        status.statusCode500();
+      }
+      loadGeneralHeaders();
+      return new Response(status, response_headers, body, response_stream);
+    }
   }
   
-  void loadImage(String path) throws IOException, InterruptedException {
-
-    BufferedImage image = ImageIO.read(new File(path));
-
-    ByteArrayOutputStream byteArrayStream = new ByteArrayOutputStream();
-    ImageIO.write(image, "jpg", byteArrayStream);
-    
-    response = new Response(byteArrayStream, type, status, client);
-
+  private void checkModifiedStatus(String absPath, String lastModifiedDate) {
+    String modifiedDate = getDate(new File(absPath).lastModified());
+    if(modifiedDate.equals(lastModifiedDate))
+      status.statusCode304();
+    else
+      response_headers.put("Last-Modified", modifiedDate);
   }
   
   String getDate(long milliSeconds) {
@@ -96,10 +83,41 @@ public class GetRequest extends Request {
     dateFormat.setTimeZone(TimeZone.getTimeZone("GMT"));
     return dateFormat.format(calendar.getTime());
   }
+  
+  int loadImage(String path) throws IOException {
 
-  private void checkModifiedStatus(String absPath, String lastModifiedDate) {
-    String modifiedDate = getDate(new File(absPath).lastModified());
-    if(modifiedDate.equals(lastModifiedDate))
-      status.statusCode304();
+    BufferedImage image = ImageIO.read(new File(path));
+    imageByteStream = new ByteArrayOutputStream();
+   
+    ImageIO.write(image, "jpg", imageByteStream);
+         
+    return imageByteStream.size();
+  }
+
+
+  private int loadResponseContent(String path) throws FileNotFoundException, IOException {
+    int content_length = 0;
+    String read_content = "";
+    int c;
+    FileReader reader = new FileReader(path);
+    
+      while ((c = reader.read()) != -1) {
+        content_length++;
+        read_content += (char)c;
+      }
+    body = read_content;
+
+    reader.close();
+    return content_length;
+  }
+  
+  @Override
+  public int getContentLength() {
+    return content_length;
+  }
+
+  private void loadGeneralHeaders() {
+     response_headers.put("Content-Type", type);
+     response_headers.put("Content-Length", Integer.toString(getContentLength()));
   }
 }
