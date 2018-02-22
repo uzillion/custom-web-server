@@ -5,16 +5,12 @@
  */
 package requests;
 
-import java.io.BufferedReader;
+import java.io.BufferedWriter;
 import java.io.File;
-import java.io.FileReader;
+import java.io.FileWriter;
 import java.io.IOException;
 import java.io.OutputStream;
-import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.List;
-import java.util.logging.Level;
-import java.util.logging.Logger;
 import response.Response;
 import response.ResponseStatus;
 
@@ -29,8 +25,10 @@ public class PutRequest extends Request {
   private HashMap<String, String> request_headers;
   private HashMap<String, String> response_headers;
   private OutputStream response_stream;
+  private String body;
   
-  public PutRequest(String absPath, HashMap<String, String> headers, ResponseStatus status, OutputStream responseStream) {
+  public PutRequest(String absPath, HashMap<String, String> headers, String body, ResponseStatus status, OutputStream responseStream) {
+    this.body = body;
     this.status = status;
     this.status.statusCode201();
     this.absPath = absPath;
@@ -40,14 +38,16 @@ public class PutRequest extends Request {
   }
   
   @Override
-  public Response createResponse() {
+  public Response createResponse(boolean isScriptAliased) {
     try {
       createFile();
+      putData();
     } catch (IOException ex) {
       System.err.println("Error creating file.");
       status.statusCode500();
+    } finally {
+      return new Response(status, response_headers, response_stream, isScriptAliased);
     }
-    return new Response(status, response_headers, response_stream);
   }
 
   private void createFile() throws IOException {
@@ -56,6 +56,12 @@ public class PutRequest extends Request {
       file.delete();
     }
     file.createNewFile();
+  }
+  
+  private void putData() throws IOException {
+    BufferedWriter writer = writer = new BufferedWriter(new FileWriter(absPath));
+    writer.write(body);
+    writer.close();
   }
   
   @Override

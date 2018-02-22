@@ -6,11 +6,7 @@
 package requests;
 
 import java.io.*;
-import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.List;
-import java.util.logging.Level;
-import java.util.logging.Logger;
 import response.Response;
 import response.ResponseStatus;
 
@@ -33,7 +29,7 @@ public class PostRequest extends Request {
   }
   
   @Override
-  public Response createResponse() {
+  public Response createResponse(boolean isScriptAliased) {
     
     try {
       postData();
@@ -41,7 +37,7 @@ public class PostRequest extends Request {
       System.err.println("Error posting data.");
       status.statusCode500();
     } finally {
-      return new Response(status, response_headers, response_stream);
+      return new Response(status, response_headers, response_stream, isScriptAliased);
     }
   }
   
@@ -53,6 +49,6 @@ public class PostRequest extends Request {
   
   @Override
   public int getContentLength() {
-    return 0;
+    return body.getBytes().length;
   } 
 }

@@ -16,6 +16,8 @@ import java.io.OutputStream;
 import java.io.OutputStreamWriter;
 import java.net.Socket;
 import java.text.SimpleDateFormat;
+import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Calendar;
 import java.util.HashMap;
 import java.util.Locale;
@@ -26,26 +28,26 @@ import response.Response;
 
 public class Worker extends Thread {
  
+  protected final ArrayList<String> VALID_VERBS
+          = new ArrayList<>(Arrays.asList("GET", "HEAD", "PUT", "POST", "DELETE"));
   private final HashMap<String, String> request_line;
   private final HashMap<String, String> headers;
   private final InputStream client_stream;
   private final HttpdConf httpd_configs;
   private final MimeTypes mimeTypes;
   public Socket client_socket;
-  String absPath;
-  Htaccess htaccess;
-  Htpassword password;
-  Request request;
-  ResponseStatus status;
-  Response response;
-  Resource resource;
-  Logger logger;
-  String body;
-  String date;
-  
-  private final boolean DUMP = false; 
-
-  
+  private String absPath;
+  private Htaccess htaccess;
+  private Htpassword password;
+  private Request request;
+  private ResponseStatus status;
+  private Response response;
+  private Resource resource;
+  private Logger logger;
+  private String body;
+  private String date;
+  private File outputFile;
+    
   public Worker(Socket client_socket, HttpdConf httpd_configs, MimeTypes mimeTypes) throws IOException {
     this.client_socket = client_socket;
     request_line = new HashMap<>();
@@ -63,41 +65,27 @@ public class Worker extends Thread {
   public void run() {
     try {
       parse(client_stream);
-      resource = new Resource(httpd_configs.getList(), request_line);
-      absPath = resource.resolveAddresses();
-      if(new File(absPath).exists() || request_line.get("verb").equals("PUT")) {
-        String accessFilePath = getAccessFilePath(absPath);
-        File authFile = new File(accessFilePath);
-        if(authFile.exists()) {
-          boolean authorized;
-          authorized = checkAuthorization(authFile);
-          if(authorized) {
-            if(resource.isScriptAliased)
-              runscript();
-            else
-              handleRequest(request_line.get("verb"));
-          }
-        } else {
-          if(resource.isScriptAliased)
-              runscript();
-          else
-              handleRequest(request_line.get("verb"));
-        }
+      if(VALID_VERBS.contains(request_line.get("verb"))) {
+        resource = new Resource(httpd_configs.getList(), request_line);
+        absPath = resource.resolveAddresses();
+        runResourceDirectives(absPath);
       } else {
-        status.statusCode404();
+        status.statusCode400();
       }
       
     } catch(IOException e) {
       status.statusCode500();
     } finally {
       try {
+        handleUnsuccessfulRequests();
         client_stream.close();
         client_socket.close();
       } catch (IOException ex) {
+        System.err.println("Error in fetching response.");
       }
-      System.out.println(logBuilder());
+      System.out.println(buildLog());
       try {
-        logger.writeLog(logBuilder());
+        logger.writeLog(buildLog());
       } catch (IOException ex) {
         System.err.println("Failed to output log to file");
       }
@@ -105,8 +93,8 @@ public class Worker extends Thread {
   }
   
    private void parse(InputStream client_stream) throws IOException {
+     
     BufferedReader requestBuffer = new BufferedReader(new InputStreamReader(client_stream));
-    String[] request_line_tokens;
     
     while(true) {
       if(requestBuffer.ready()) {
@@ -118,16 +106,6 @@ public class Worker extends Thread {
     parseHeaders(requestBuffer);
     if(headers.containsKey("Content-Length"))
       parseBody(requestBuffer);
-    
-    
-    if(DUMP) {
-      System.out.println();
-      System.out.println(this.getName()+":");
-      System.out.println(request_line.toString());
-      System.out.println(headers.toString());
-      System.out.println(body);
-      System.out.println();
-    }
     
   }
   
@@ -180,32 +158,45 @@ public class Worker extends Thread {
   
   private void runscript() {
     try {
-      ProcessBuilder builder;
-      builder = new ProcessBuilder(absPath);
+      ProcessBuilder processBuilder;
+      Map<String, String> processEnv;
+      processBuilder = new ProcessBuilder(absPath);
       
-      Map<String, String> env = builder.environment();
-      for(Map.Entry<String, String> entry : headers.entrySet()) {
-        String key = entry.getKey();
-        String value = entry.getValue();
-        env.put(key, value);
-      }
-      redirectOutput(builder);
-      Process process = builder.start();
+      processEnv = exportEnvironmentVariables(processBuilder);
+      
+      redirectOutput(processBuilder);
+
+      Process process = processBuilder.start();
       
       String verb = request_line.get("verb");
       if(verb.equals("PUT") || verb.equals("POST")) {
-        writeToProcessSTDIN(process);
+        writeToProcessStdin(process);
         
       }
 
       process.waitFor();
-    }
-    catch(Exception e) {
+      handleRequest(request_line.get("verb"));
+
+    } catch(Exception e) {
       System.err.println("Problem running script.");
       status.statusCode500();
+    } finally {
+      if(outputFile != null)
+        outputFile.delete();
     }
   }
-
+  
+  private Map<String, String> exportEnvironmentVariables(ProcessBuilder processBuilder) {
+    Map<String, String> env = processBuilder.environment();
+    for(Map.Entry<String, String> entry : headers.entrySet()) {
+      String key = "HTTP_"+entry.getKey().toUpperCase();
+      String value = entry.getValue();
+      env.put(key, value);
+    }
+    
+    return env;
+  }
+  
   private String getAccessFilePath(String absPath) {
     
     String parentPath = new File(absPath).getParent();
@@ -244,7 +235,7 @@ public class Worker extends Thread {
         request = new PostRequest(absPath, headers, body, status, client_socket.getOutputStream());
         break;
       case "PUT":
-        request = new PutRequest(absPath, headers, status, client_socket.getOutputStream());
+        request = new PutRequest(absPath, headers, body, status, client_socket.getOutputStream());
         break;
       case "HEAD":
         request = new HeadRequest(absPath, headers, getType(absPath), status, client_socket.getOutputStream());
@@ -254,7 +245,7 @@ public class Worker extends Thread {
         return;
     }
     
-    response = request.createResponse();
+    response = request.createResponse(resource.isScriptAliased);
     response.respond();
   }
   
@@ -264,23 +255,7 @@ public class Worker extends Thread {
     return mimeTypes.getType(extension);
   }
 
-  private void exportEnvVariables(ProcessBuilder process) {
-    for(Map.Entry<String, String> entry : headers.entrySet()) {
-      String key = entry.getKey();
-      String value = entry.getValue();
-    }
-  }
-
-  private void pipeBodyToScript(Process process) throws IOException {
-    OutputStream process_stdin = process.getOutputStream();
-    BufferedWriter writer = new BufferedWriter(new OutputStreamWriter(process_stdin));
-    writer.write(body);
-    writer.newLine();
-    writer.flush();
-    writer.close();
-  }
-
-  private String logBuilder() {
+  private String buildLog() {
     String log_entry = "";
     log_entry += client_socket.getRemoteSocketAddress()+" ";
     
@@ -290,10 +265,12 @@ public class Worker extends Thread {
       log_entry += "- ";
     
     log_entry += "["+getLogTime()+"] ";
+    
     log_entry += "\""+request_line.get("verb")+" ";
-    log_entry += request_line.get("URI")+" ";
+    
+    log_entry += request_line.get("URI");
     if(request_line.get("version") != null)
-      log_entry += request_line.get("version")+"\" ";
+      log_entry += " " + request_line.get("version")+"\" ";
     else
       log_entry += "\" ";
     log_entry += status.getStatusCode()+" ";
@@ -312,19 +289,49 @@ public class Worker extends Thread {
   }
 
   private void redirectOutput(ProcessBuilder processBuilder) throws IOException, InterruptedException {
-    
-      String scriptParent = new File(absPath).getParent();
-      File outputFile = new File(scriptParent+"/scriptOutput.txt");
-      outputFile.createNewFile();
-      processBuilder.redirectOutput(outputFile);
-      absPath = outputFile.getAbsolutePath();
-      handleRequest(body);
-      
+    String scriptParent = new File(absPath).getParent();
+    outputFile = new File(scriptParent+"/scriptOutput.txt");
+    outputFile.createNewFile();
+    processBuilder.redirectOutput(outputFile);
+    absPath = outputFile.getAbsolutePath();
   }
 
-  private void writeToProcessSTDIN(Process process) throws IOException, IOException {
+  private void writeToProcessStdin(Process process) throws IOException, IOException {
     OutputStream stdin = process.getOutputStream();
     BufferedWriter writer = new BufferedWriter(new OutputStreamWriter(stdin));
     writer.write(body);
+  }
+
+  private void runResourceDirectives(String path) throws IOException {
+    if(new File(absPath).exists() || request_line.get("verb").equals("PUT")) {
+      String accessFilePath = getAccessFilePath(absPath);
+      File authFile = new File(accessFilePath);
+      if(authFile.exists()) {
+        boolean authorized;
+        authorized = checkAuthorization(authFile);
+        if(authorized) {
+          if(resource.isScriptAliased)
+            runscript();
+          else
+            handleRequest(request_line.get("verb"));
+        }
+      } else {
+        if(resource.isScriptAliased)
+          runscript();
+        else
+          handleRequest(request_line.get("verb"));
+      }
+    } else {
+      status.statusCode404();
+    }
+  }
+
+  private void handleUnsuccessfulRequests() throws IOException {
+    int statusCode = status.getStatusCode();
+    boolean error = !(statusCode == 200 || statusCode == 201 || statusCode == 204 || statusCode == 304 );
+    if(error) {
+      response = new Response(status, client_socket.getOutputStream(), false);
+      response.respond();
+    }
   }
 }

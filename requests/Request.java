@@ -1,7 +1,11 @@
 package requests;
 
 import java.io.IOException;
+import java.text.SimpleDateFormat;
+import java.util.Calendar;
 import java.util.HashMap;
+import java.util.Locale;
+import java.util.TimeZone;
 import response.Response;
 
 /*
@@ -16,8 +20,17 @@ import response.Response;
  */
 public abstract class Request {
   
-  public abstract Response createResponse();
+  public abstract Response createResponse(boolean isScriptAliased);
   
   public abstract int getContentLength();
+  
+  protected String getDate(long milliSeconds) {
+    Calendar calendar = Calendar.getInstance();
+    calendar.setTimeInMillis(milliSeconds);
+    SimpleDateFormat dateFormat = new SimpleDateFormat(
+        "EEE, dd MMM yyyy HH:mm:ss z", Locale.US);
+    dateFormat.setTimeZone(TimeZone.getTimeZone("GMT"));
+    return dateFormat.format(calendar.getTime());
+  }
           
 }

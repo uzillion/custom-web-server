@@ -9,11 +9,7 @@ import java.io.FileNotFoundException;
 import java.io.FileReader;
 import java.io.IOException;
 import java.io.OutputStream;
-import java.text.SimpleDateFormat;
-import java.util.Calendar;
 import java.util.HashMap;
-import java.util.Locale;
-import java.util.TimeZone;
 import javax.imageio.ImageIO;
 import response.ResponseStatus;
 
@@ -29,9 +25,11 @@ public class GetRequest extends Request {
   HashMap<String, String> response_headers;
   String absPath;
   String body;
-  ByteArrayOutputStream imageByteStream; 
+  ByteArrayOutputStream imageByteStream;
+  boolean isScriptAliased;
   
   public GetRequest(String absPath, HashMap<String, String> headers, String type, ResponseStatus status, OutputStream responseStream) {
+    isScriptAliased = false;
     this.response_stream = responseStream;
     request_headers = headers;
     this.type = type;
@@ -41,7 +39,9 @@ public class GetRequest extends Request {
   }
   
   @Override
-  public Response createResponse() {
+  public Response createResponse(boolean isScriptAliased) {
+    
+    this.isScriptAliased = isScriptAliased;
     
     if(request_headers.containsKey("Last-Modified"))
       checkModifiedStatus(absPath, request_headers.get("Last-Modified"));
@@ -54,7 +54,7 @@ public class GetRequest extends Request {
         status.statusCode500();
       }
       loadGeneralHeaders();
-      return new Response(status, response_headers, imageByteStream, response_stream);
+      return new Response(status, response_headers, imageByteStream, response_stream, isScriptAliased);
     } else {
       try {
         content_length = loadResponseContent(absPath);
@@ -63,7 +63,7 @@ public class GetRequest extends Request {
         status.statusCode500();
       }
       loadGeneralHeaders();
-      return new Response(status, response_headers, body, response_stream);
+      return new Response(status, response_headers, body, response_stream, isScriptAliased);
     }
   }
   
@@ -75,16 +75,7 @@ public class GetRequest extends Request {
       response_headers.put("Last-Modified", modifiedDate);
   }
   
-  String getDate(long milliSeconds) {
-    Calendar calendar = Calendar.getInstance();
-    calendar.setTimeInMillis(milliSeconds);
-    SimpleDateFormat dateFormat = new SimpleDateFormat(
-        "EEE, dd MMM yyyy HH:mm:ss z", Locale.US);
-    dateFormat.setTimeZone(TimeZone.getTimeZone("GMT"));
-    return dateFormat.format(calendar.getTime());
-  }
-  
-  int loadImage(String path) throws IOException {
+  private int loadImage(String path) throws IOException {
 
     BufferedImage image = ImageIO.read(new File(path));
     imageByteStream = new ByteArrayOutputStream();
@@ -99,13 +90,23 @@ public class GetRequest extends Request {
     int content_length = 0;
     String read_content = "";
     int c;
+    boolean count = false;
+    
     FileReader reader = new FileReader(path);
     
       while ((c = reader.read()) != -1) {
-        content_length++;
+        if(!isScriptAliased || count || read_content.endsWith("\n")) {
+          count = true;
+          content_length++;
+        }
         read_content += (char)c;
+          
       }
     body = read_content;
+//    if(!isScriptAliased) {
+//      System.out.println("carriage added");
+//      body = "\r\n" + body;
+//    }
 
     reader.close();
     return content_length;
@@ -117,7 +118,9 @@ public class GetRequest extends Request {
   }
 
   private void loadGeneralHeaders() {
-     response_headers.put("Content-Type", type);
-     response_headers.put("Content-Length", Integer.toString(getContentLength()));
+    if(!isScriptAliased) {
+      response_headers.put("Content-Type", type);
+      response_headers.put("Content-Length", Integer.toString(getContentLength()));
+    }
   }
 }

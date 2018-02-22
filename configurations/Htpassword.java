@@ -6,7 +6,6 @@ import java.util.HashMap;
 import java.util.Base64;
 import java.nio.charset.Charset;
 import java.security.MessageDigest;
-
 import java.io.IOException;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -70,11 +69,6 @@ public class Htpassword extends ConfigurationReader {
       return true;
     
     return false;
-
-    // encrypt the password, and compare it to the password stored
-    // in the password file (keyed by username)
-    // TODO: implement this - note that the encryption step is provided as a
-    // method, below
   }
 
   private String encryptClearPassword( String password ) {

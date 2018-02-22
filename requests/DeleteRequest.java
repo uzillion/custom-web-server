@@ -5,13 +5,9 @@
  */
 package requests;
 
-import core.Resource;
-import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.List;
 import response.Response;
 import java.io.*;
-import java.net.Socket;
 import response.ResponseStatus;
 
 public class DeleteRequest extends Request {
@@ -31,9 +27,9 @@ public class DeleteRequest extends Request {
   }
   
   @Override
-  public Response createResponse() {
+  public Response createResponse(boolean isScriptAliased) {
     deleteFile();
-    return new Response(status, response_headers, response_stream);
+    return new Response(status, response_headers, response_stream, isScriptAliased);
   }
 
   private void deleteFile() {

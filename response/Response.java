@@ -18,28 +18,29 @@ public class Response {
   byte[] size;
   ByteArrayOutputStream imageByteStream;
   private OutputStream response_stream;
+//  boolean isScriptAliased = ;
   
 
-  public Response(ResponseStatus status, HashMap<String, String> response_headers, OutputStream response_stream) {
+  public Response(ResponseStatus status, HashMap<String, String> response_headers, OutputStream response_stream, boolean isScriptAliased) {
     initializeData(response_stream);
-    this.response_content = factory.create(status, response_headers);
+    this.response_content = factory.create(status, response_headers, isScriptAliased);
   }
 
-  public Response(ResponseStatus status, HashMap<String, String> response_headers, String body, OutputStream response_stream) {
+  public Response(ResponseStatus status, HashMap<String, String> response_headers, String body, OutputStream response_stream, boolean isScriptAliased) {
     initializeData(response_stream);
-    this.response_content = factory.create(status, response_headers, body);
+    this.response_content = factory.create(status, response_headers, body, isScriptAliased);
   }
 
-  public Response(ResponseStatus status, HashMap<String, String> response_headers, ByteArrayOutputStream imageByteStream, OutputStream response_stream) {
+  public Response(ResponseStatus status, HashMap<String, String> response_headers, ByteArrayOutputStream imageByteStream, OutputStream response_stream, boolean isScriptAliased) {
     initializeData(response_stream);
     this.imageByteStream = imageByteStream;
-    this.response_content = factory.create(status, response_headers);
+    this.response_content = factory.create(status, response_headers, isScriptAliased);
   }
   
-  public Response(ResponseStatus status, OutputStream responseStream) {
+  public Response(ResponseStatus status, OutputStream response_stream, boolean isScriptAliased) {
     initializeData(response_stream);
     HashMap<String, String> response_headers = new HashMap<>();
-    this.response_content = factory.create(status, response_headers);
+    this.response_content = factory.create(status, response_headers, isScriptAliased);
   }
   
   void initializeData(OutputStream response_stream) {

@@ -1,18 +1,11 @@
 package core;
 
-
-
-
 import java.io.File;
 import java.util.ArrayList;
 import java.util.HashMap;
 import response.Response;
 import response.ResponseStatus;
 
-/**
- *
- *  
- */
 public class Resource {
   
   private final HashMap<String, ArrayList> configList;
@@ -56,7 +49,6 @@ public class Resource {
     else if((alias_index = checkAlias("ScriptAlias")) != -1) {
       path = getAbsPath("ScriptAlias", alias_index);
       isScriptAliased = true;
-      System.out.println("Script Aliased");
     }
     // Else append documet root to unmodified URI
     else

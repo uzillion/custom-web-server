@@ -2,20 +2,13 @@ package requests;
 
 import java.awt.image.BufferedImage;
 import response.Response;
-import java.util.ArrayList;
 import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.FileReader;
 import java.io.IOException;
 import java.io.OutputStream;
-import java.text.SimpleDateFormat;
-import java.util.Calendar;
 import java.util.HashMap;
-import java.util.Locale;
-import java.util.TimeZone;
-import java.util.logging.Level;
-import java.util.logging.Logger;
 import javax.imageio.ImageIO;
 import response.ResponseStatus;
 
@@ -32,8 +25,10 @@ public class HeadRequest extends Request {
   String absPath;
   String body;
   ByteArrayOutputStream imageByteStream; 
+  boolean isScriptAliased;
   
   public HeadRequest(String absPath, HashMap<String, String> headers, String type, ResponseStatus status, OutputStream responseStream) {
+    isScriptAliased = false;
     this.response_stream = responseStream;
     request_headers = headers;
     this.type = type;
@@ -43,7 +38,9 @@ public class HeadRequest extends Request {
   }
   
   @Override
-  public Response createResponse() {
+  public Response createResponse(boolean isScriptAliased) {
+    
+    this.isScriptAliased = isScriptAliased;
     
     if(request_headers.containsKey("Last-Modified"))
       checkModifiedStatus(absPath, request_headers.get("Last-Modified"));
@@ -65,9 +62,8 @@ public class HeadRequest extends Request {
       }
       loadGeneralHeaders();
     }
-    return new Response(status, response_headers, response_stream);
+    return new Response(status, response_headers, response_stream, isScriptAliased);
 
-//    response.respond(type);
   }
   
   private void checkModifiedStatus(String absPath, String lastModifiedDate) {
@@ -76,15 +72,6 @@ public class HeadRequest extends Request {
       status.statusCode304();
     else
       response_headers.put("Last-Modified", modifiedDate);
-  }
-  
-  String getDate(long milliSeconds) {
-    Calendar calendar = Calendar.getInstance();
-    calendar.setTimeInMillis(milliSeconds);
-    SimpleDateFormat dateFormat = new SimpleDateFormat(
-        "EEE, dd MMM yyyy HH:mm:ss z", Locale.US);
-    dateFormat.setTimeZone(TimeZone.getTimeZone("GMT"));
-    return dateFormat.format(calendar.getTime());
   }
   
   int loadImage(String path) throws IOException {
@@ -103,11 +90,16 @@ public class HeadRequest extends Request {
     int content_length = 0;
     String read_content = "";
     int c;
+    boolean count = false;
+    
     FileReader reader = new FileReader(path);
     while ((c = reader.read()) != -1) {
-      content_length++;
-      read_content += (char)c;
-    }
+        if(!isScriptAliased || count || read_content.endsWith("\n")) {
+          count = true;
+          content_length++;
+        }
+        read_content += (char)c;          
+      }
     body = read_content;
 
     reader.close();
@@ -120,7 +112,9 @@ public class HeadRequest extends Request {
   }
 
   private void loadGeneralHeaders() {
+    if(!isScriptAliased) {
      response_headers.put("Content-Type", type);
      response_headers.put("Content-Length", Integer.toString(getContentLength()));
+    }
   }
 }
